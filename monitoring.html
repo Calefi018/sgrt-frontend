@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoramento - SGRT</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="main-menu">
+    <ul>
+        <li><a href="/admin.html" class="logo">SGRT Admin</a></li>
+        <li class="nav-links">
+            <a href="/monitoring.html">Monitoramento</a>
+            <button id="theme-toggle" class="nav-button">Modo Escuro</button>
+            <a href="/index.html">Sair</a>
+        </li>
+    </ul>
+</nav>
+
+<div class="main-container">
+    <h1>Monitoramento em Tempo Real</h1>
+    <div id="monitoring-dashboard" class="monitoring-grid">
+        </div>
+</div>
+
+<script>
+    const API_URL = 'https://sgrt-api.onrender.com';
+    const dashboard = document.getElementById('monitoring-dashboard');
+
+    // --- INICIALIZAÇÃO E AUTENTICAÇÃO ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const user = JSON.parse(localStorage.getItem('sgrt_user'));
+        if (!user || user.role !== 'ADMIN') {
+            alert('Acesso negado.');
+            window.location.href = '/index.html';
+            return;
+        }
+
+        const themeToggle = document.getElementById('theme-toggle');
+        if (localStorage.getItem('sgrt_theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            themeToggle.textContent = 'Modo Claro';
+        }
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const theme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+            themeToggle.textContent = theme === 'dark' ? 'Modo Claro' : 'Modo Escuro';
+            localStorage.setItem('sgrt_theme', theme);
+        });
+
+        updateDashboard(); // Carrega o dashboard imediatamente
+        setInterval(updateDashboard, 30000); // Atualiza a cada 30 segundos
+    });
+
+
+    // --- FUNÇÃO PRINCIPAL DO DASHBOARD ---
+    async function updateDashboard() {
+        try {
+            // Busca todos os técnicos e todas as OS em paralelo
+            const [techResponse, ordersResponse] = await Promise.all([
+                fetch(`${API_URL}/technicians`),
+                fetch(`${API_URL}/service-orders`)
+            ]);
+
+            const technicians = await techResponse.json();
+            const orders = await ordersResponse.json();
+
+            dashboard.innerHTML = ''; // Limpa o dashboard antes de recarregar
+
+            if (technicians.length === 0) {
+                dashboard.innerHTML = '<p>Nenhum técnico cadastrado para monitorar.</p>';
+                return;
+            }
+
+            technicians.forEach(tech => {
+                const techOrders = orders.filter(o => o.technicianId === tech.id);
+                const metrics = calculateMetrics(techOrders);
+                const card = createTechnicianCard(tech, techOrders, metrics);
+                dashboard.appendChild(card);
+            });
+
+        } catch (error) {
+            console.error("Erro ao atualizar o dashboard:", error);
+            dashboard.innerHTML = '<p>Não foi possível carregar os dados de monitoramento. A API pode estar offline.</p>';
+        }
+    }
+
+    // --- FUNÇÕES AUXILIARES ---
+    function calculateMetrics(orders) {
+        const total = orders.length;
+        const completed = orders.filter(o => o.status === 'FINALIZADA').length;
+        return { total, completed };
+    }
+
+    function getTechnicianStatus(orders) {
+        const activeOS = orders.find(o => o.status === 'EXECUTANDO');
+        if (activeOS) return { text: 'Em Atendimento', os: activeOS, class: 'status-executing' };
+
+        const enRouteOS = orders.find(o => o.status === 'A_CAMINHO');
+        if (enRouteOS) return { text: 'Em Deslocamento', os: enRouteOS, class: 'status-enroute' };
+
+        const pendingOS = orders.find(o => o.status === 'PENDENTE');
+        if (pendingOS) return { text: 'Em Rota', os: null, class: 'status-onroute' };
+
+        if (orders.length > 0 && orders.every(o => o.status === 'FINALIZADA')) {
+            return { text: 'Finalizou Rota', os: null, class: 'status-finished' };
+        }
+
+        return { text: 'Livre', os: null, class: 'status-free' };
+    }
+
+    function createTechnicianCard(technician, orders, metrics) {
+        const card = document.createElement('div');
+        card.className = 'monitoring-card';
+
+        const statusInfo = getTechnicianStatus(orders);
+        card.classList.add(statusInfo.class);
+
+        let timerHtml = '';
+        if (statusInfo.os && statusInfo.os.status === 'EXECUTANDO' && statusInfo.os.executionStartTime) {
+            const startTime = new Date(statusInfo.os.executionStartTime).getTime();
+            const now = new Date().getTime();
+            const duration = Math.round((now - startTime) / 60000);
+            timerHtml = `<div class="timer">⏳ ${duration} min em execução</div>`;
+        }
+
+        let currentOsHtml = '<p>Nenhuma OS ativa no momento.</p>';
+        if (statusInfo.os) {
+            currentOsHtml = `
+                <p><strong>OS Atual:</strong> ${statusInfo.os.clientId} - ${statusInfo.os.clientName}</p>
+                <p><strong>Endereço:</strong> ${statusInfo.os.address}</p>
+            `;
+        }
+
+        card.innerHTML = `
+            <div class="card-header">
+                <h3>${technician.name}</h3>
+                <span class="tech-status">${statusInfo.text}</span>
+            </div>
+            <div class="card-body">
+                ${currentOsHtml}
+            </div>
+            <div class="card-footer">
+                <p><strong>Progresso do Dia:</strong> ${metrics.completed} / ${metrics.total} OS</p>
+                ${timerHtml}
+            </div>
+        `;
+        return card;
+    }
+
+</script>
+
+</body>
+</html>
