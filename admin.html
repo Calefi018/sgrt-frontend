@@ -20,6 +20,7 @@
 </nav>
 
 <div class="main-container">
+    <h1>Painel de Gestão</h1>
     <div class="panel-group">
         <div class="panel">
             <h2>Gerenciar Técnicos</h2>
@@ -37,7 +38,7 @@
         <div class="panel">
             <h2>Importar Ordens de Serviço</h2>
             <form id="form-import-routes">
-                <textarea id="bulk-routes" rows="10" placeholder="Cole as rotas aqui, uma por linha.&#10;ID Cliente - Nome - Bairro - Serviço - Base"></textarea>
+                <textarea id="bulk-routes" rows="10" placeholder="Cole as rotas aqui, uma por linha.&#10;ID Cliente - Nome - Bairro - Serviço - Base (D1/D2)"></textarea>
                 <p>Atribuir para:</p>
                 <select id="import-technician-select" required></select>
                 <select id="import-period-select" required>
@@ -50,11 +51,226 @@
     </div>
 
     <div class="panel full-width-panel">
-        <h2>Rotas do Dia (Arraste para reordenar)</h2>
+        <h2>Rotas do Dia (Arraste os cards para reordenar)</h2>
         <div id="routes-container"><p>As rotas agendadas aparecerão aqui.</p></div>
     </div>
 </div>
 
-<script src="main.js"></script>
+<script>
+    const API_URL = 'https://sgrt-api.onrender.com';
+
+    // --- ELEMENTOS DO DOM ---
+    const techForm = document.getElementById('form-create-technician');
+    const techList = document.getElementById('technician-list');
+    const importTechSelect = document.getElementById('import-technician-select');
+    const routesContainer = document.getElementById('routes-container');
+    const importForm = document.getElementById('form-import-routes');
+    const themeToggle = document.getElementById('theme-toggle');
+
+    // --- INICIALIZAÇÃO E AUTENTICAÇÃO ---
+    document.addEventListener('DOMContentLoaded', () => {
+        // Verifica se o usuário é Admin
+        const user = JSON.parse(localStorage.getItem('sgrt_user'));
+        if (!user || user.role !== 'ADMIN') {
+            alert('Acesso negado.');
+            window.location.href = '/index.html';
+            return;
+        }
+
+        // Configura o tema (claro/escuro)
+        if (localStorage.getItem('sgrt_theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            themeToggle.textContent = 'Modo Claro';
+        }
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const theme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+            themeToggle.textContent = theme === 'dark' ? 'Modo Claro' : 'Modo Escuro';
+            localStorage.setItem('sgrt_theme', theme);
+        });
+
+        // Carrega os dados iniciais
+        loadTechnicians();
+        loadAllOrders();
+    });
+
+    // --- LÓGICA DE TÉCNICOS ---
+    async function loadTechnicians() {
+        try {
+            const response = await fetch(`${API_URL}/technicians`);
+            if (!response.ok) throw new Error('Falha ao carregar técnicos');
+            const technicians = await response.json();
+            
+            techList.innerHTML = '';
+            importTechSelect.innerHTML = '<option value="">Selecione um Técnico</option>';
+            if (technicians.length === 0) techList.innerHTML = '<li>Nenhum técnico cadastrado.</li>';
+
+            technicians.forEach(tech => {
+                const listItem = document.createElement('li');
+                listItem.innerHTML = `<span>${tech.name} (${tech.email})</span><div><button onclick="editTechnician('${tech.id}', '${tech.name}', '${tech.email}')" class="btn-secondary">Editar</button><button onclick="deleteTechnician('${tech.id}')" class="btn-danger">Excluir</button></div>`;
+                techList.appendChild(listItem);
+
+                const optionItem = document.createElement('option');
+                optionItem.value = tech.id;
+                optionItem.textContent = tech.name;
+                importTechSelect.appendChild(optionItem.cloneNode(true));
+            });
+        } catch (error) { techList.innerHTML = `<li>${error.message}</li>`; }
+    }
+
+    techForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = { name: document.getElementById('tech-name').value, email: document.getElementById('tech-email').value, password: document.getElementById('tech-password').value };
+        try {
+            const r = await fetch(`${API_URL}/technicians`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            if (r.ok) { alert('Técnico adicionado!'); techForm.reset(); loadTechnicians(); } else { alert('Falha. Email já existe?'); }
+        } catch (err) { alert('Erro de conexão.'); }
+    });
+
+    async function deleteTechnician(id) {
+        if (!confirm('Tem certeza? Isso excluirá o técnico e todas as suas OS.')) return;
+        try {
+            const r = await fetch(`${API_URL}/technicians/${id}`, { method: 'DELETE' });
+            if (r.ok) { alert('Excluído!'); loadTechnicians(); loadAllOrders(); } else { alert('Falha.'); }
+        } catch (err) { alert('Erro.'); }
+    }
+
+    function editTechnician(id, name, email) {
+        const newName = prompt("Novo nome:", name); if (newName === null) return;
+        const newEmail = prompt("Novo email:", email); if (newEmail === null) return;
+        if (newName && newEmail) updateTechnician(id, newName, newEmail);
+    }
+
+    async function updateTechnician(id, name, email) {
+        try {
+            const r = await fetch(`${API_URL}/technicians/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email }) });
+            if (r.ok) { alert('Atualizado!'); loadTechnicians(); loadAllOrders(); } else { alert('Falha.'); }
+        } catch (err) { alert('Erro.'); }
+    }
+
+    // --- LÓGICA DE ORDENS DE SERVIÇO ---
+    async function loadAllOrders() {
+        routesContainer.innerHTML = '<p>Carregando rotas...</p>';
+        try {
+            const response = await fetch(`${API_URL}/service-orders`);
+            const orders = await response.json();
+            if (orders.length === 0) { routesContainer.innerHTML = '<p>Nenhuma rota agendada.</p>'; return; }
+            
+            const routesByTechnician = orders.reduce((acc, order) => {
+                const tech = order.technician;
+                if (!tech) return acc;
+                if (!acc[tech.id]) acc[tech.id] = { name: tech.name, orders: [] };
+                acc[tech.id].orders.push(order);
+                return acc;
+            }, {});
+
+            routesContainer.innerHTML = '';
+            for (const techId in routesByTechnician) {
+                const techData = routesByTechnician[techId];
+                const columnDiv = document.createElement('div');
+                columnDiv.className = 'technician-column';
+                let columnHtml = `<h3>${techData.name}</h3>`;
+                
+                const manhaOrders = techData.orders.filter(o => o.period === 'MANHA');
+                const tardeOrders = techData.orders.filter(o => o.period === 'TARDE');
+
+                columnHtml += `<div class="period-group" data-period="MANHA"><h4>☀️ MANHÃ</h4><div class="os-list">`;
+                manhaOrders.forEach(order => { columnHtml += renderOsCard(order); });
+                columnHtml += `</div></div>`;
+
+                columnHtml += `<div class="period-group" data-period="TARDE"><h4>🌙 TARDE</h4><div class="os-list">`;
+                tardeOrders.forEach(order => { columnHtml += renderOsCard(order); });
+                columnHtml += `</div></div>`;
+                
+                columnDiv.innerHTML = columnHtml;
+                routesContainer.appendChild(columnDiv);
+            }
+
+            document.querySelectorAll('.os-list').forEach(list => {
+                new Sortable(list, { group: 'shared-os', animation: 150, onEnd: saveNewOrder });
+            });
+        } catch (error) { routesContainer.innerHTML = `<p>Erro ao carregar rotas: ${error.message}</p>`; }
+    }
+
+    function renderOsCard(order) {
+        return `
+            <div class="os-card" data-id="${order.id}">
+                <div class="os-card-header">
+                    <p><strong>ID:</strong> ${order.clientId} - ${order.clientName}</p>
+                    <div>
+                        <button title="Transferir OS" onclick="transferOrder('${order.id}')" class="card-btn-transfer">⇆</button>
+                        <button title="Excluir OS" onclick="deleteOrder('${order.id}')" class="card-btn-delete">×</button>
+                    </div>
+                </div>
+                <p><strong>Problema:</strong> ${order.problemDescription}</p>
+                <p><strong>Endereço:</strong> ${order.address}</p>
+                <p><strong>Status:</strong> <span class="status-${order.status.toLowerCase()}">${order.status.replace('_', ' ')}</span></p>
+            </div>
+        `;
+    }
+
+    async function deleteOrder(orderId) {
+        if (!confirm('Tem certeza que deseja excluir esta OS?')) return;
+        try {
+            const response = await fetch(`${API_URL}/service-orders/${orderId}`, { method: 'DELETE' });
+            if (response.ok) { loadAllOrders(); } else { alert('Falha ao excluir a OS.'); }
+        } catch (error) { alert('Erro de conexão ao excluir a OS.'); }
+    }
+
+    async function saveNewOrder(event) {
+        const allOsCards = Array.from(document.querySelectorAll('.os-card'));
+        const orderedIds = allOsCards.map(card => card.dataset.id);
+        try {
+            await fetch(`${API_URL}/service-orders/reorder`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderedIds: orderedIds })
+            });
+        } catch (error) { console.error("Falha ao salvar ordem:", error); alert("Erro ao salvar nova ordem."); }
+    }
+
+    async function transferOrder(orderId) {
+        try {
+            const techResponse = await fetch(`${API_URL}/technicians`);
+            const technicians = await techResponse.json();
+            let options = technicians.map((t, i) => `${i + 1} - ${t.name}`).join('\n');
+            const choice = prompt(`Para qual técnico deseja transferir?\n${options}`);
+            if (!choice) return;
+            const choiceIndex = parseInt(choice) - 1;
+            if (technicians[choiceIndex]) {
+                const newTechnicianId = technicians[choiceIndex].id;
+                await fetch(`${API_URL}/service-orders/${orderId}/transfer`, {
+                    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ newTechnicianId })
+                });
+                loadAllOrders();
+            } else { alert("Seleção inválida."); }
+        } catch (error) { alert('Erro ao buscar técnicos.'); }
+    }
+
+    importForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const technicianId = importTechSelect.value;
+        const period = document.getElementById('import-period-select').value;
+        const text = document.getElementById('bulk-routes').value;
+        if (!technicianId) return alert('Selecione um técnico.');
+        const lines = text.split('\n').filter(line => line.trim() !== '');
+        if (lines.length === 0) return alert('Cole as rotas.');
+        
+        for (const [index, line] of lines.entries()) {
+            const regex = /^(\d+)\s*-\s*(.+?)\s*-\s*(.+?)\s*-\s*(.+?)\s*-\s*(.+)/i;
+            const match = line.match(regex);
+            if (match) {
+                let priority = match[5].trim().toUpperCase();
+                if (priority.includes("BASE 1")) priority = "D1"; if (priority.includes("BASE 2")) priority = "D2";
+                const osData = { clientId: parseInt(match[1]), clientName: match[2].trim(), address: match[3].trim(), problemDescription: match[4].trim(), priority, period, technicianId, position: index };
+                try {
+                    await fetch(`${API_URL}/service-orders`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(osData) });
+                } catch (err) { alert(`Erro de conexão na OS: ${osData.clientId}`); }
+            } else { alert(`Linha ignorada: "${line}"`); }
+        }
+        alert('Importação finalizada!');
+        loadAllOrders();
+        importForm.reset();
+    });
+</script>
+
 </body>
 </html>
