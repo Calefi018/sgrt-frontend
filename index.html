@@ -5,6 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - SGRT</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Estilos específicos para a página de login para centralizar o conteúdo */
+        body, html {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 20px;
+            padding: 40px;
+            background: var(--panel-bg-color);
+            box-shadow: 0 4px 20px var(--shadow-color);
+            border-radius: 8px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
     <div class="login-container">
@@ -18,11 +37,17 @@
     </div>
 
     <script>
-        const API_URL = 'https://sgrt-api.onrender.com';
+        // Este script é específico para a página de login
+        const API_URL = 'https://sgrt-api.onrender.com'; // Confirme se a URL da sua API está correta
         const loginForm = document.getElementById('login-form');
 
-        // Limpa dados de login ao chegar na página de login
+        // Garante que qualquer usuário antigo seja desconectado ao chegar na página de login
         localStorage.removeItem('sgrt_user');
+        
+        // Aplica o tema (claro/escuro) salvo, se houver
+        if (localStorage.getItem('sgrt_theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -35,9 +60,14 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
+
                 if (response.ok) {
                     const userData = await response.json();
+                    
+                    // Salva o objeto completo do usuário (com id e role) no armazenamento do navegador
                     localStorage.setItem('sgrt_user', JSON.stringify(userData));
+
+                    // Redireciona para a página correta com base no "papel" (role) do usuário
                     if (userData.role === 'ADMIN') {
                         window.location.href = '/admin.html';
                     } else {
@@ -47,7 +77,8 @@
                     alert('Email ou senha incorretos.');
                 }
             } catch (error) {
-                alert('Não foi possível conectar ao servidor.');
+                console.error("Erro no login:", error);
+                alert('Não foi possível conectar ao servidor. Verifique se a API está no ar.');
             }
         });
     </script>
