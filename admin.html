@@ -51,17 +51,21 @@
             </select>
             <button type="submit">Importar e Atribuir Rotas</button>
         </form>
-        
-        <hr>
-        <h3>Rotas do Dia</h3>
+    </div>
+</div>
+
+<div class="container">
+    <div class="panel" style="flex-basis: 100%;">
+        <h2>Rotas do Dia</h2>
         <div id="routes-container">
-            <p>A visualização das rotas do dia será adicionada aqui.</p>
+            <p>As rotas agendadas aparecerão aqui.</p>
         </div>
     </div>
 </div>
 
+
 <script>
-    const API_URL = 'https://sgrt-api.onrender.com'; // Sua URL da API
+    const API_URL = 'https://sgrt-api.onrender.com';
 
     // --- ELEMENTOS DO DOM ---
     const techForm = document.getElementById('form-create-technician');
@@ -108,17 +112,9 @@
 
     techForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const techData = {
-            name: document.getElementById('tech-name').value,
-            email: document.getElementById('tech-email').value,
-            password: document.getElementById('tech-password').value,
-        };
+        const techData = { name: document.getElementById('tech-name').value, email: document.getElementById('tech-email').value, password: document.getElementById('tech-password').value };
         try {
-            const response = await fetch(`${API_URL}/technicians`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(techData)
-            });
+            const response = await fetch(`${API_URL}/technicians`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(techData) });
             if (response.ok) {
                 alert('Técnico adicionado com sucesso!');
                 techForm.reset();
@@ -126,16 +122,11 @@
             } else {
                 alert('Falha ao adicionar técnico. O email já pode existir.');
             }
-        } catch (error) {
-            console.error("Erro ao criar técnico:", error);
-            alert('Erro de conexão ao criar técnico.');
-        }
+        } catch (error) { console.error("Erro ao criar técnico:", error); alert('Erro de conexão ao criar técnico.'); }
     });
 
     async function deleteTechnician(id) {
-        if (!confirm('Tem certeza que deseja excluir este técnico? Todas as OS dele também serão removidas.')) {
-            return;
-        }
+        if (!confirm('Tem certeza que deseja excluir este técnico? Todas as OS dele também serão removidas.')) return;
         try {
             const response = await fetch(`${API_URL}/technicians/${id}`, { method: 'DELETE' });
             if (response.ok) {
@@ -145,9 +136,7 @@
             } else {
                 alert('Falha ao excluir o técnico.');
             }
-        } catch (error) {
-            alert('Erro de conexão ao excluir técnico.');
-        }
+        } catch (error) { alert('Erro de conexão ao excluir técnico.'); }
     }
 
     function editTechnician(id, currentName, currentEmail) {
@@ -155,27 +144,19 @@
         if (newName === null) return;
         const newEmail = prompt("Digite o novo email:", currentEmail);
         if (newEmail === null) return;
-        if (newName && newEmail) {
-            updateTechnician(id, newName, newEmail);
-        }
+        if (newName && newEmail) updateTechnician(id, newName, newEmail);
     }
 
     async function updateTechnician(id, name, email) {
         try {
-            const response = await fetch(`${API_URL}/technicians/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email })
-            });
+            const response = await fetch(`${API_URL}/technicians/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email }) });
             if (response.ok) {
                 alert('Técnico atualizado com sucesso!');
                 loadTechnicians();
             } else {
                 alert('Falha ao atualizar o técnico.');
             }
-        } catch (error) {
-            alert('Erro de conexão ao atualizar técnico.');
-        }
+        } catch (error) { alert('Erro de conexão ao atualizar técnico.'); }
     }
 
     // --- LÓGICA DE ORDENS DE SERVIÇO ---
@@ -190,33 +171,33 @@
             }
             const routesByTechnician = orders.reduce((acc, order) => {
                 const techName = order.technician ? order.technician.name : 'Sem Técnico';
-                if (!acc[techName]) {
-                    acc[techName] = [];
-                }
+                if (!acc[techName]) acc[techName] = [];
                 acc[techName].push(order);
                 return acc;
             }, {});
             routesContainer.innerHTML = '';
             for (const techName in routesByTechnician) {
-                const techDiv = document.createElement('div');
-                techDiv.className = 'technician-route-group';
-                let ordersHtml = `<h3>${techName}</h3>`;
-                routesByTechnician[techName].forEach(order => {
-                    ordersHtml += `
-                        <div class="os-card">
-                            <p><strong>Cliente ID:</strong> ${order.clientId} - ${order.clientName}</p>
-                            <p><strong>Problema:</strong> ${order.problemDescription}</p>
-                            <p><strong>Status:</strong> <span class="status-${order.status.toLowerCase()}">${order.status.replace('_', ' ')}</span></p>
-                        </div>
-                    `;
-                });
-                techDiv.innerHTML = ordersHtml;
-                routesContainer.appendChild(techDiv);
+                const columnDiv = document.createElement('div');
+                columnDiv.className = 'technician-column';
+                let columnHtml = `<h3>${techName}</h3>`;
+                const manhaOrders = routesByTechnician[techName].filter(o => o.period === 'MANHA');
+                const tardeOrders = routesByTechnician[techName].filter(o => o.period === 'TARDE');
+                if (manhaOrders.length > 0) {
+                    columnHtml += `<h4>☀️ MANHÃ</h4>`;
+                    manhaOrders.forEach(order => {
+                        columnHtml += `<div class="os-card"><p><strong>ID Cliente:</strong> ${order.clientId} - ${order.clientName}</p><p><strong>Problema:</strong> ${order.problemDescription}</p><p><strong>Status:</strong> <span class="status-${order.status.toLowerCase()}">${order.status.replace('_', ' ')}</span></p></div>`;
+                    });
+                }
+                if (tardeOrders.length > 0) {
+                    columnHtml += `<h4>🌙 TARDE</h4>`;
+                    tardeOrders.forEach(order => {
+                        columnHtml += `<div class="os-card"><p><strong>ID Cliente:</strong> ${order.clientId} - ${order.clientName}</p><p><strong>Problema:</strong> ${order.problemDescription}</p><p><strong>Status:</strong> <span class="status-${order.status.toLowerCase()}">${order.status.replace('_', ' ')}</span></p></div>`;
+                    });
+                }
+                columnDiv.innerHTML = columnHtml;
+                routesContainer.appendChild(columnDiv);
             }
-        } catch (error) {
-            console.error("Erro ao carregar Ordens de Serviço:", error);
-            routesContainer.innerHTML = '<p>Erro ao carregar rotas. A API pode estar offline.</p>';
-        }
+        } catch (error) { console.error("Erro ao carregar Ordens de Serviço:", error); routesContainer.innerHTML = '<p>Erro ao carregar rotas. A API pode estar offline.</p>'; }
     }
 
     importForm.addEventListener('submit', async (e) => {
@@ -224,18 +205,10 @@
         const technicianId = document.getElementById('import-technician-select').value;
         const period = document.getElementById('import-period-select').value;
         const text = document.getElementById('bulk-routes').value;
-
-        if (!technicianId) {
-            alert('Por favor, selecione um técnico para atribuir as rotas.');
-            return;
-        }
+        if (!technicianId) return alert('Por favor, selecione um técnico para atribuir as rotas.');
         const lines = text.split('\n').filter(line => line.trim() !== '');
-        if (lines.length === 0) {
-            alert('Por favor, cole as rotas na caixa de texto.');
-            return;
-        }
+        if (lines.length === 0) return alert('Por favor, cole as rotas na caixa de texto.');
         alert(`Iniciando importação de ${lines.length} rotas.`);
-
         for (const line of lines) {
             const regex = /^(\d+)\s*-\s*(.+?)\s*-\s*(.+?)\s*-\s*(.+?)\s*-\s*(.+)/i;
             const match = line.match(regex);
@@ -243,33 +216,12 @@
                 let priority = match[5].trim().toUpperCase();
                 if (priority.includes("BASE 1")) priority = "D1";
                 if (priority.includes("BASE 2")) priority = "D2";
-
-                const osData = {
-                    clientId: parseInt(match[1]),
-                    clientName: match[2].trim(),
-                    address: match[3].trim(),
-                    problemDescription: match[4].trim(),
-                    priority: priority,
-                    period: period,
-                    notes: "Importado em massa.",
-                    technicianId: technicianId
-                };
-                
+                const osData = { clientId: parseInt(match[1]), clientName: match[2].trim(), address: match[3].trim(), problemDescription: match[4].trim(), priority: priority, period: period, notes: "Importado em massa.", technicianId: technicianId };
                 try {
-                    const response = await fetch(`${API_URL}/service-orders`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(osData)
-                    });
-                    if (!response.ok) {
-                        alert(`Falha ao importar OS do cliente ID ${osData.clientId}`);
-                    }
-                } catch (error) {
-                    alert(`Erro de conexão ao importar OS do cliente ID ${osData.clientId}`);
-                }
-            } else {
-                alert(`A linha "${line}" não está no formato correto e foi ignorada.`);
-            }
+                    const response = await fetch(`${API_URL}/service-orders`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(osData) });
+                    if (!response.ok) alert(`Falha ao importar OS do cliente ID ${osData.clientId}`);
+                } catch (error) { alert(`Erro de conexão ao importar OS do cliente ID ${osData.clientId}`); }
+            } else { alert(`A linha "${line}" não está no formato correto e foi ignorada.`); }
         }
         alert('Importação finalizada!');
         loadAllOrders();
