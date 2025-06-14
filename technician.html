@@ -12,6 +12,7 @@
     <ul>
         <li><a href="/technician.html" class="logo">SGRT Técnico</a></li>
         <li class="nav-links">
+            <a href="/admin.html" id="admin-link" style="display: none;">Painel Admin</a>
             <button id="theme-toggle" class="nav-button">Modo Escuro</button>
             <a href="/index.html">Sair</a>
         </li>
@@ -21,12 +22,183 @@
 <div class="main-container">
     <h1 id="greeting"></h1>
     <div class="panel full-width-panel">
+        <h2 style="border: none;">Minhas Ordens de Serviço</h2>
         <div id="my-route-container">
             <p>Carregando rota...</p>
         </div>
     </div>
 </div>
 
-<script src="main.js"></script>
+<script>
+    const API_URL = 'https://sgrt-api.onrender.com';
+    const routeContainer = document.getElementById('my-route-container');
+    const user = JSON.parse(localStorage.getItem('sgrt_user'));
+
+    // --- INICIALIZAÇÃO E AUTENTICAÇÃO ---
+    document.addEventListener('DOMContentLoaded', () => {
+        // 1. VERIFICA SE O USUÁRIO É UM TÉCNICO LOGADO
+        if (!user || user.role !== 'TECHNICIAN') {
+            alert('Acesso negado. Por favor, faça o login como técnico.');
+            window.location.href = '/index.html';
+            return;
+        }
+
+        // 2. CONFIGURA O TEMA (CLARO/ESCURO)
+        const themeToggle = document.getElementById('theme-toggle');
+        if (localStorage.getItem('sgrt_theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            themeToggle.textContent = 'Modo Claro';
+        }
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const theme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+            themeToggle.textContent = theme === 'dark' ? 'Modo Claro' : 'Modo Escuro';
+            localStorage.setItem('sgrt_theme', theme);
+        });
+
+        // 3. ESCONDE O LINK DE ADMIN
+        document.getElementById('admin-link').style.display = 'none';
+
+        // 4. SAUDAÇÃO PERSONALIZADA
+        const hour = new Date().getHours();
+        let greetingText = (hour < 12) ? 'Bom dia' : (hour < 18) ? 'Boa tarde' : 'Boa noite';
+        document.getElementById('greeting').textContent = `${greetingText}, ${user.name}!`;
+        
+        // 5. CARREGA A ROTA DO TÉCNICO
+        loadMyRoute();
+    });
+
+    // --- FUNÇÕES DA PÁGINA ---
+    function renderOsCard(order) {
+        const textToCopy = `${order.clientId} - ${order.clientName}`;
+        const durationText = order.executionDuration ? `${order.executionDuration} min` : 'N/A';
+
+        return `
+            <div class="os-card">
+                <div class="os-card-header">
+                    <p><strong>ID:</strong> ${order.clientId} - ${order.clientName}</p>
+                    <div>
+                        <button title="Copiar Cliente" onclick="copyToClipboard('${textToCopy}')" class="card-btn-copy">📋</button>
+                        <button title="Transferir OS" onclick="transferOrder('${order.id}')" class="card-btn-transfer">⇆</button>
+                    </div>
+                </div>
+                <p><strong>Endereço:</strong> ${order.address}</p>
+                <p><strong>Problema:</strong> ${order.problemDescription}</p>
+                <p><strong>Prioridade (Base):</strong> ${order.priority}</p>
+                <p><strong>Observações:</strong> ${order.notes || 'Nenhuma'}</p>
+                <div class="os-card-footer">
+                    <p><strong>Status:</strong> <span class="status-${order.status.toLowerCase()}">${order.status.replace('_', ' ')}</span></p>
+                    <p><strong>Tempo de Execução:</strong> ${durationText}</p>
+                </div>
+                <div class="actions">
+                    <button onclick="updateStatus('${order.id}', 'A_CAMINHO')">A Caminho</button>
+                    <button onclick="updateStatus('${order.id}', 'EXECUTANDO')">Executando</button>
+                    <button onclick="updateStatus('${order.id}', 'FINALIZADA')">Finalizar</button>
+                    <button onclick="updateStatus('${order.id}', 'REAGENDADA')">Reagendar</button>
+                </div>
+            </div>
+        `;
+    }
+    
+    async function loadMyRoute() {
+        routeContainer.innerHTML = '<p>Buscando sua rota...</p>';
+        try {
+            const response = await fetch(`${API_URL}/my-route?technicianId=${user.id}`);
+            if (!response.ok) throw new Error(`Erro da API`);
+            const orders = await response.json();
+
+            if (orders.length === 0) {
+                routeContainer.innerHTML = '<h2>Nenhuma Ordem de Serviço atribuída para hoje.</h2>';
+                return;
+            }
+            routeContainer.innerHTML = '';
+            
+            const manhaOrders = orders.filter(order => order.period === 'MANHA');
+            const tardeOrders = orders.filter(order => order.period === 'TARDE');
+
+            const renderOrderGroup = (title, orderList) => {
+                if (orderList.length > 0) {
+                    const groupTitle = document.createElement('h2');
+                    groupTitle.textContent = title;
+                    routeContainer.appendChild(groupTitle);
+                    orderList.forEach(order => {
+                        routeContainer.innerHTML += renderOsCard(order);
+                    });
+                }
+            };
+            renderOrderGroup('☀️ MANHÃ', manhaOrders);
+            renderOrderGroup('🌙 TARDE', tardeOrders);
+
+        } catch (error) {
+            routeContainer.innerHTML = `<h2>Não foi possível carregar sua rota. Tente recarregar a página.</h2>`;
+        }
+    }
+
+    async function updateStatus(orderId, newStatus) {
+        let justification = null;
+        if (newStatus === 'REAGENDADA') {
+            justification = prompt("Por favor, digite o motivo do reagendamento:");
+            if (!justification) {
+                alert("O reagendamento foi cancelado pois a justificativa é obrigatória.");
+                return;
+            }
+        }
+        try {
+            const response = await fetch(`${API_URL}/service-orders/${orderId}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus, justification: justification })
+            });
+            if (response.ok) {
+                loadMyRoute();
+            } else {
+                alert('Falha ao atualizar o status.');
+            }
+        } catch (error) { alert('Erro de conexão ao atualizar status.'); }
+    }
+
+    async function transferOrder(orderId) {
+        try {
+            const techResponse = await fetch(`${API_URL}/technicians`);
+            const technicians = await techResponse.json();
+            const otherTechnicians = technicians.filter(t => t.id !== user.id);
+            if(otherTechnicians.length === 0) return alert("Não há outros técnicos para transferir.");
+
+            let options = otherTechnicians.map((t, i) => `${i + 1} - ${t.name}`).join('\n');
+            const choice = prompt(`Para qual técnico deseja transferir?\n${options}`);
+            if (!choice) return;
+
+            const choiceIndex = parseInt(choice) - 1;
+            if (otherTechnicians[choiceIndex]) {
+                const newTechnicianId = otherTechnicians[choiceIndex].id;
+                if(confirm(`Tem certeza que deseja transferir esta OS para ${otherTechnicians[choiceIndex].name}?`)){
+                    const transferResponse = await fetch(`${API_URL}/service-orders/${orderId}/transfer`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ newTechnicianId })
+                    });
+                    if (transferResponse.ok) {
+                        alert('OS transferida com sucesso!');
+                        loadMyRoute();
+                    } else {
+                        alert('Falha ao transferir OS.');
+                    }
+                }
+            } else {
+                alert("Seleção inválida.");
+            }
+        } catch(error) {
+            alert('Erro ao buscar técnicos para transferência.');
+        }
+    }
+
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert(`Copiado para a área de transferência:\n"${text}"`);
+        }).catch(err => {
+            alert('Falha ao copiar o texto.');
+        });
+    }
+</script>
 </body>
 </html>
