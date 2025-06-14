@@ -1,205 +1,47 @@
 /* --- Estilos Gerais --- */
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: #f4f7f9;
-    color: #333;
-    margin: 0;
-    padding: 0;
-}
-
-h1 {
-    color: #2c3e50;
-    text-align: center;
-    margin-top: 30px;
-    margin-bottom: 30px;
-}
-
-h2 {
-    border-bottom: 2px solid #e0e0e0;
-    padding-bottom: 10px;
-    color: #34495e;
-    margin-top: 0;
-    font-size: 1.5em;
-}
-
-h3 {
-    color: #555;
-    margin-bottom: 15px;
-}
-
-hr {
-    border: none;
-    border-top: 1px solid #eee;
-    margin: 20px 0;
-}
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f7f9; color: #333; margin: 0; padding: 0; }
+h1 { color: #2c3e50; text-align: center; margin-top: 30px; margin-bottom: 30px; }
+h2 { border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; color: #34495e; margin-top: 0; font-size: 1.5em; }
+h3 { color: #555; margin-bottom: 15px; }
+hr { border: none; border-top: 1px solid #eee; margin: 20px 0; }
 
 /* --- Estilos do Menu de Navegação --- */
-nav.main-menu {
-    background-color: #ffffff;
-    padding: 0 30px;
-    margin-bottom: 30px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    border-bottom: 1px solid #e0e0e0;
-}
-
-nav.main-menu ul {
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-nav.main-menu .logo {
-    color: #2c3e50;
-    font-size: 1.5em;
-    font-weight: bold;
-    padding: 15px 0;
-    text-decoration: none;
-}
-
-nav.main-menu .nav-links a {
-    color: #555;
-    text-decoration: none;
-    padding: 20px 15px;
-    display: block;
-    transition: color 0.3s, background-color 0.3s;
-    font-weight: 500;
-}
-
-nav.main-menu .nav-links a:hover {
-    background-color: #f5f5f5;
-    color: #007bff;
-}
+nav.main-menu { background-color: #ffffff; padding: 0 30px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-bottom: 1px solid #e0e0e0; }
+nav.main-menu ul { list-style-type: none; margin: 0; padding: 0; display: flex; justify-content: space-between; align-items: center; }
+nav.main-menu .logo { color: #2c3e50; font-size: 1.5em; font-weight: bold; padding: 15px 0; text-decoration: none; }
+nav.main-menu .nav-links a { color: #555; text-decoration: none; padding: 20px 15px; display: block; transition: color 0.3s, background-color 0.3s; font-weight: 500; }
+nav.main-menu .nav-links a:hover { background-color: #f5f5f5; color: #007bff; }
 
 /* --- Layout do Painel --- */
-.container {
-    display: flex;
-    flex-wrap: wrap; 
-    gap: 40px;
-    max-width: 1600px; /* Aumentado para mais espaço */
-    margin: 0 auto;
-    padding: 0 20px 40px 20px;
-}
-
-.panel {
-    flex: 1; 
-    min-width: 400px; 
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
+.container { display: flex; flex-wrap: wrap; gap: 40px; max-width: 1600px; margin: 0 auto; padding: 0 20px 40px 20px; }
+.panel { flex: 1; min-width: 400px; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
 
 /* --- Estilos de Formulário --- */
-form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-input[type="text"],
-input[type="email"],
-input[type="password"],
-input[type="number"],
-select,
-textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box; 
-    font-size: 14px;
-}
-
-textarea {
-    resize: vertical;
-    min-height: 80px;
-}
-
-button {
-    background-color: #3498db;
-    color: white;
-    padding: 12px 15px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: bold;
-    transition: background-color 0.3s;
-}
-
-button:hover {
-    background-color: #2980b9;
-}
+form { display: flex; flex-direction: column; gap: 15px; }
+input[type="text"], input[type="email"], input[type="password"], input[type="number"], select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
+textarea { resize: vertical; min-height: 80px; }
+button { background-color: #3498db; color: white; padding: 12px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; transition: background-color 0.3s; }
+button:hover { background-color: #2980b9; }
 
 /* --- Estilos de Listas e Cards --- */
-#technician-list {
-    list-style-type: none;
-    padding: 0;
-}
-#technician-list li {
-    background-color: #f9f9f9;
-    padding: 10px 15px;
-    border-bottom: 1px solid #eee;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-}
+#technician-list { list-style-type: none; padding: 0; }
+#technician-list li { background-color: #f9f9f9; padding: 10px 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+#technician-list li:last-child { border-bottom: none; }
 
-#technician-list li:last-child {
-    border-bottom: none;
-}
+.os-card { background-color: #fff; border: 1px solid #e0e0e0; border-radius: 5px; padding: 15px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); cursor: grab; position: relative; }
+.os-card:active { cursor: grabbing; }
+.os-card p { margin: 5px 0; }
+.os-card .actions { margin-top: 10px; }
 
-.os-card {
-    background-color: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 5px;
-    padding: 15px;
-    margin-bottom: 15px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-}
-
-.os-card p {
-    margin: 5px 0;
-}
-
-.os-card .actions {
-    margin-top: 10px;
-}
+/* --- Botão de Excluir OS --- */
+.delete-os-btn { position: absolute; top: 5px; right: 5px; background: #ddd; color: #555; border: none; border-radius: 50%; width: 22px; height: 22px; line-height: 22px; text-align: center; padding: 0; font-weight: bold; cursor: pointer; font-size: 14px; }
+.delete-os-btn:hover { background: #e74c3c; color: white; }
 
 /* --- Estilos do Dashboard de Rotas (Admin) --- */
-#routes-container {
-    display: flex;
-    gap: 20px;
-    overflow-x: auto;
-    padding-bottom: 15px;
-    min-height: 200px;
-}
-
-.technician-column {
-    min-width: 350px;
-    flex: 1;
-    background-color: #f0f2f5;
-    border-radius: 8px;
-    padding: 15px;
-}
-
-.technician-column h3 {
-    margin-top: 0;
-    border-bottom: 2px solid #ddd;
-    padding-bottom: 10px;
-}
-
-.technician-column h4 {
-    margin-top: 20px;
-    margin-bottom: 10px;
-    color: #555;
-    font-size: 1em;
-    text-transform: uppercase;
-}
+#routes-container { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 15px; min-height: 200px; }
+.technician-column { min-width: 350px; flex: 1; background-color: #f0f2f5; border-radius: 8px; padding: 15px; }
+.technician-column h3 { margin-top: 0; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+.technician-column h4 { margin-top: 20px; margin-bottom: 10px; color: #555; font-size: 1em; text-transform: uppercase; }
 
 /* --- Estilos de Status --- */
 .status-pendente { color: gray; font-weight: bold; }
