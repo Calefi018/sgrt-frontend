@@ -5,22 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - SGRT</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        .login-container {
-            width: 100%;
-            max-width: 400px;
-            margin: 80px auto;
-            padding: 40px;
-            background: #fff;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            border-radius: 8px;
-            text-align: center;
-        }
-    </style>
 </head>
 <body>
     <div class="login-container">
-        <h1>SGRT - Acesso ao Sistema</h1>
+        <h1>SGRT</h1>
+        <p>Sistema de Gestão de Rotas de Técnicos</p>
         <form id="login-form">
             <input type="email" id="email" placeholder="Seu Email" required>
             <input type="password" id="password" placeholder="Sua Senha" required>
@@ -29,42 +18,36 @@
     </div>
 
     <script>
-        const API_URL = 'https://sgrt-api.onrender.com'; // Sua URL da API
+        const API_URL = 'https://sgrt-api.onrender.com';
         const loginForm = document.getElementById('login-form');
+
+        // Limpa dados de login ao chegar na página de login
+        localStorage.removeItem('sgrt_user');
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
-            // --- Lógica de Login ---
-            
-            // 1. Tratativa especial para o Admin
-            if (email === 'admin@suaempresa.com' && password === 'admin123') {
-                alert('Bem-vindo, Admin!');
-                window.location.href = '/admin.html'; // Redireciona para o painel admin
-                return; 
-            }
-
-            // 2. Lógica para os técnicos
             try {
                 const response = await fetch(`${API_URL}/api/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
-
                 if (response.ok) {
-                    const technician = await response.json();
-                    alert(`Bem-vindo, ${technician.name}!`);
-                    // Redireciona para a página do técnico com o ID dele
-                    window.location.href = `/technician.html?id=${technician.id}`;
+                    const userData = await response.json();
+                    localStorage.setItem('sgrt_user', JSON.stringify(userData));
+                    if (userData.role === 'ADMIN') {
+                        window.location.href = '/admin.html';
+                    } else {
+                        window.location.href = '/technician.html';
+                    }
                 } else {
-                    alert('Email ou senha de técnico incorretos.');
+                    alert('Email ou senha incorretos.');
                 }
             } catch (error) {
-                console.error("Erro no login:", error);
-                alert('Não foi possível conectar ao servidor. Tente novamente.');
+                alert('Não foi possível conectar ao servidor.');
             }
         });
     </script>
