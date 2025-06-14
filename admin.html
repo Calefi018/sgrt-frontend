@@ -11,169 +11,50 @@
 
 <nav class="main-menu">
     <ul>
-        <li><a href="/index.html" class="logo">SGRT</a></li>
+        <li><a href="/admin.html" class="logo">SGRT Admin</a></li>
         <li class="nav-links">
-            <a href="/admin.html">Painel Admin</a>
-            <a href="/index.html">Sair (Logout)</a>
+            <button id="theme-toggle" class="nav-button">Modo Escuro</button>
+            <a href="/index.html">Sair</a>
         </li>
     </ul>
 </nav>
 
-<h1>Painel de Gestão SGRT</h1>
-
-<div class="container">
-    <div class="panel">
-        <h2>Gerenciar Técnicos</h2>
-        <form id="form-create-technician">
-            <h3>Adicionar Novo Técnico</h3>
-            <input type="text" id="tech-name" placeholder="Nome do Técnico" required>
-            <input type="email" id="tech-email" placeholder="Email do Técnico" required>
-            <input type="password" id="tech-password" placeholder="Senha Temporária" required>
-            <button type="submit">Adicionar Técnico</button>
-        </form>
-        <hr>
-        <h3>Técnicos Cadastrados</h3>
-        <ul id="technician-list"><li>Carregando...</li></ul>
+<div class="main-container">
+    <div class="panel-group">
+        <div class="panel">
+            <h2>Gerenciar Técnicos</h2>
+            <form id="form-create-technician">
+                <h3>Adicionar Novo Técnico</h3>
+                <input type="text" id="tech-name" placeholder="Nome do Técnico" required>
+                <input type="email" id="tech-email" placeholder="Email do Técnico" required>
+                <input type="password" id="tech-password" placeholder="Senha Temporária" required>
+                <button type="submit">Adicionar Técnico</button>
+            </form>
+            <hr>
+            <h3>Técnicos Cadastrados</h3>
+            <ul id="technician-list"><li>Carregando...</li></ul>
+        </div>
+        <div class="panel">
+            <h2>Importar Ordens de Serviço</h2>
+            <form id="form-import-routes">
+                <textarea id="bulk-routes" rows="10" placeholder="Cole as rotas aqui, uma por linha.&#10;ID Cliente - Nome - Bairro - Serviço - Base"></textarea>
+                <p>Atribuir para:</p>
+                <select id="import-technician-select" required></select>
+                <select id="import-period-select" required>
+                    <option value="MANHA">Manhã</option>
+                    <option value="TARDE">Tarde</option>
+                </select>
+                <button type="submit">Importar e Atribuir</button>
+            </form>
+        </div>
     </div>
 
-    <div class="panel">
-        <h2>Gerenciar Ordens de Serviço</h2>
-        <h3>Importar Rotas em Massa</h3>
-        <form id="form-import-routes">
-            <textarea id="bulk-routes" rows="10" placeholder="Cole as rotas aqui, uma por linha.&#10;Formato: ID Cliente - Nome - Bairro - Serviço - Base (D1/D2)"></textarea>
-            <p>Atribuir todas as rotas importadas para:</p>
-            <select id="import-technician-select" required></select>
-            <select id="import-period-select" required>
-                <option value="MANHA">Manhã</option>
-                <option value="TARDE">Tarde</option>
-            </select>
-            <button type="submit">Importar e Atribuir Rotas</button>
-        </form>
-    </div>
-</div>
-
-<div class="container">
-    <div class="panel" style="flex-basis: 100%;">
+    <div class="panel full-width-panel">
         <h2>Rotas do Dia (Arraste para reordenar)</h2>
         <div id="routes-container"><p>As rotas agendadas aparecerão aqui.</p></div>
     </div>
 </div>
 
-<script>
-    const API_URL = 'https://sgrt-api.onrender.com';
-
-    // --- ELEMENTOS DO DOM ---
-    const techForm = document.getElementById('form-create-technician');
-    const techList = document.getElementById('technician-list');
-    const importTechSelect = document.getElementById('import-technician-select');
-    const routesContainer = document.getElementById('routes-container');
-    const importForm = document.getElementById('form-import-routes');
-
-    // --- LÓGICA DE TÉCNICOS (sem alterações significativas) ---
-    async function loadTechnicians() {
-        try {
-            const response = await fetch(`${API_URL}/technicians`);
-            if (!response.ok) throw new Error('Falha na resposta da API');
-            const technicians = await response.json();
-            techList.innerHTML = '';
-            importTechSelect.innerHTML = '<option value="">Selecione um Técnico</option>';
-            if (technicians.length === 0) techList.innerHTML = '<li>Nenhum técnico cadastrado.</li>';
-            technicians.forEach(tech => {
-                const listItem = document.createElement('li');
-                listItem.innerHTML = `<span>${tech.name} (${tech.email})</span><div><button onclick="editTechnician('${tech.id}', '${tech.name}', '${tech.email}')" style="font-size:12px; padding: 5px 8px;">Editar</button><button onclick="deleteTechnician('${tech.id}')" style="background-color: #e74c3c; font-size:12px; padding: 5px 8px;">Excluir</button></div>`;
-                techList.appendChild(listItem);
-                const optionItem = document.createElement('option');
-                optionItem.value = tech.id;
-                optionItem.textContent = tech.name;
-                importTechSelect.appendChild(optionItem.cloneNode(true));
-            });
-        } catch (error) { console.error("Erro ao carregar técnicos:", error); techList.innerHTML = '<li>Erro ao carregar técnicos.</li>'; }
-    }
-    techForm.addEventListener('submit', async (e) => { e.preventDefault(); const d = { name: document.getElementById('tech-name').value, email: document.getElementById('tech-email').value, password: document.getElementById('tech-password').value }; try { const r = await fetch(`${API_URL}/technicians`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}); if(r.ok){alert('Técnico adicionado!');techForm.reset();loadTechnicians();}else{alert('Falha. Email já existe?');} } catch (err) { alert('Erro de conexão.'); } });
-    async function deleteTechnician(id) { if (!confirm('Tem certeza?')) return; try { const r = await fetch(`${API_URL}/technicians/${id}`,{method:'DELETE'}); if (r.ok) { alert('Excluído!'); loadTechnicians(); loadAllOrders(); } else { alert('Falha.'); } } catch (err) { alert('Erro.'); } }
-    function editTechnician(id, name, email) { const n = prompt("Novo nome:", name); if(n===null)return; const em=prompt("Novo email:", email); if(em===null)return; if(n&&em)updateTechnician(id,n,em); }
-    async function updateTechnician(id, n, em) { try { const r = await fetch(`${API_URL}/technicians/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,email:em})}); if (r.ok) { alert('Atualizado!'); loadTechnicians(); } else { alert('Falha.'); } } catch (err) { alert('Erro.'); } }
-
-    // --- LÓGICA DE ORDENS DE SERVIÇO ---
-    async function loadAllOrders() {
-        routesContainer.innerHTML = '<p>Carregando rotas...</p>';
-        try {
-            const response = await fetch(`${API_URL}/service-orders`);
-            const orders = await response.json();
-            if (orders.length === 0) { routesContainer.innerHTML = '<p>Nenhuma rota para hoje.</p>'; return; }
-            const routesByTechnician = orders.reduce((acc, order) => {
-                const tech = order.technician;
-                if (!tech) return acc;
-                if (!acc[tech.id]) acc[tech.id] = { name: tech.name, orders: [] };
-                acc[tech.id].orders.push(order);
-                return acc;
-            }, {});
-            routesContainer.innerHTML = '';
-            for (const techId in routesByTechnician) {
-                const techData = routesByTechnician[techId];
-                const columnDiv = document.createElement('div');
-                columnDiv.className = 'technician-column';
-                let columnHtml = `<h3>${techData.name}</h3>`;
-                const manhaOrders = techData.orders.filter(o => o.period === 'MANHA');
-                const tardeOrders = techData.orders.filter(o => o.period === 'TARDE');
-                columnHtml += `<div class="period-group" data-period="MANHA" data-tech-id="${techId}"><h4>☀️ MANHÃ</h4>`;
-                manhaOrders.forEach(order => { columnHtml += `<div class="os-card" data-id="${order.id}"><button onclick="deleteOrder('${order.id}')" class="delete-os-btn">×</button><p><strong>ID Cliente:</strong> ${order.clientId} - ${order.clientName}</p><p><strong>Problema:</strong> ${order.problemDescription}</p><p><strong>Status:</strong> <span class="status-${order.status.toLowerCase()}">${order.status.replace('_', ' ')}</span></p></div>`; });
-                columnHtml += `</div>`;
-                columnHtml += `<div class="period-group" data-period="TARDE" data-tech-id="${techId}"><h4>🌙 TARDE</h4>`;
-                tardeOrders.forEach(order => { columnHtml += `<div class="os-card" data-id="${order.id}"><button onclick="deleteOrder('${order.id}')" class="delete-os-btn">×</button><p><strong>ID Cliente:</strong> ${order.clientId} - ${order.clientName}</p><p><strong>Problema:</strong> ${order.problemDescription}</p><p><strong>Status:</strong> <span class="status-${order.status.toLowerCase()}">${order.status.replace('_', ' ')}</span></p></div>`; });
-                columnHtml += `</div>`;
-                columnDiv.innerHTML = columnHtml;
-                routesContainer.appendChild(columnDiv);
-            }
-            // ATIVA O DRAG-AND-DROP DEPOIS DE RENDERIZAR
-            document.querySelectorAll('.period-group').forEach(group => {
-                new Sortable(group, { group: 'shared-os', animation: 150, onEnd: saveNewOrder });
-            });
-        } catch (error) { console.error("Erro ao carregar OS:", error); routesContainer.innerHTML = '<p>Erro ao carregar rotas.</p>'; }
-    }
-
-    async function deleteOrder(orderId) {
-        if (!confirm('Tem certeza que deseja excluir esta OS?')) return;
-        try {
-            const response = await fetch(`${API_URL}/service-orders/${orderId}`, { method: 'DELETE' });
-            if (response.ok) { loadAllOrders(); } else { alert('Falha ao excluir a OS.'); }
-        } catch (error) { alert('Erro de conexão ao excluir a OS.'); }
-    }
-
-    async function saveNewOrder(event) {
-        const groupEl = event.to;
-        const orderElements = Array.from(groupEl.children).filter(el => el.classList.contains('os-card'));
-        const orderedIds = orderElements.map(el => el.dataset.id);
-        try {
-            await fetch(`${API_URL}/service-orders/reorder`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderedIds: orderedIds }) });
-        } catch (error) { console.error("Falha ao salvar ordem:", error); alert("Erro ao salvar nova ordem."); }
-    }
-
-    importForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const techId = document.getElementById('import-technician-select').value;
-        const period = document.getElementById('import-period-select').value;
-        const text = document.getElementById('bulk-routes').value;
-        if (!techId) return alert('Selecione um técnico.');
-        const lines = text.split('\n').filter(line => line.trim() !== '');
-        if (lines.length === 0) return alert('Cole as rotas.');
-        for (const line of lines) {
-            const regex = /^(\d+)\s*-\s*(.+?)\s*-\s*(.+?)\s*-\s*(.+?)\s*-\s*(.+)/i;
-            const match = line.match(regex);
-            if (match) {
-                let priority = match[5].trim().toUpperCase();
-                if (priority.includes("BASE 1")) priority = "D1"; if (priority.includes("BASE 2")) priority = "D2";
-                const osData = { clientId: parseInt(match[1]), clientName: match[2].trim(), address: match[3].trim(), problemDescription: match[4].trim(), priority, period, notes: "Importado.", technicianId: techId };
-                try { await fetch(`${API_URL}/service-orders`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(osData)}); } catch (err) { alert(`Erro de conexão.`); }
-            } else { alert(`Linha ignorada: "${line}"`); }
-        }
-        alert('Importação finalizada!');
-        loadAllOrders();
-        importForm.reset();
-    });
-
-    document.addEventListener('DOMContentLoaded', () => { loadTechnicians(); loadAllOrders(); });
-</script>
-
+<script src="main.js"></script>
 </body>
 </html>
