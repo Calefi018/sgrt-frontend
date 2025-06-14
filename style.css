@@ -1,4 +1,4 @@
-/* sgrt-frontend/style.css (Versão Final com Monitoramento) */
+/* sgrt-frontend/style.css (Versão com Modal de Edição) */
 
 /* --- VARIAVEIS DE COR E TEMA --- */
 :root {
@@ -10,10 +10,9 @@
     --primary-color: #007bff;
     --primary-hover-color: #0056b3;
     --danger-color: #e74c3c;
+    --secondary-color: #6c757d;
+    --secondary-hover-color: #5a6268;
     --shadow-color: rgba(0,0,0,0.05);
-    --status-executing-color: #f39c12;
-    --status-enroute-color: #3498db;
-    --status-finished-color: #2ecc71;
     --font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
@@ -26,9 +25,6 @@ body.dark-mode {
     --primary-color: #0095ff;
     --primary-hover-color: #2980b9;
     --shadow-color: rgba(0,0,0,0.2);
-    --status-executing-color: #f5b041;
-    --status-enroute-color: #5dade2;
-    --status-finished-color: #58d68d;
 }
 
 /* --- ESTILOS GERAIS (BASE MOBILE) --- */
@@ -37,18 +33,17 @@ body { font-family: var(--font-family); background-color: var(--bg-color); color
 h1 { font-size: 1.8em; text-align: center; margin: 20px 15px; }
 h2 { font-size: 1.4em; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-top: 0; }
 h3 { font-size: 1.1em; color: var(--text-muted-color); margin-bottom: 15px; }
-h4 { font-size: 0.9em; text-transform: uppercase; color: var(--text-muted-color); margin: 20px 0 10px 0; }
-p { line-height: 1.6; }
 hr { border: none; border-top: 1px solid var(--border-color); margin: 25px 0; }
 
 /* --- LAYOUT PRINCIPAL --- */
 .main-container { padding: 0 15px 30px 15px; }
 .panel-group { display: flex; flex-direction: column; gap: 20px; }
 .panel { background-color: var(--panel-bg-color); padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px var(--shadow-color); border: 1px solid var(--border-color); }
+.full-width-panel { flex-basis: 100%; }
 
 /* --- MENU DE NAVEGAÇÃO --- */
-nav.main-menu { position: sticky; top: 0; z-index: 10; }
-nav.main-menu ul { list-style-type: none; margin: 0; padding: 0 15px; display: flex; justify-content: space-between; align-items: center; height: 60px; background-color: var(--panel-bg-color); border-bottom: 1px solid var(--border-color); }
+nav.main-menu { position: sticky; top: 0; z-index: 10; background-color: var(--panel-bg-color); border-bottom: 1px solid var(--border-color); }
+nav.main-menu ul { list-style-type: none; margin: 0; padding: 0 15px; display: flex; justify-content: space-between; align-items: center; height: 60px; }
 nav.main-menu .logo { color: var(--text-color); font-size: 1.2em; font-weight: bold; text-decoration: none; }
 nav.main-menu .nav-links { display: flex; align-items: center; gap: 5px; }
 nav.main-menu .nav-links a { color: var(--text-muted-color); padding: 0 10px; font-weight: 500; text-decoration: none; }
@@ -58,40 +53,38 @@ nav.main-menu .nav-links a { color: var(--text-muted-color); padding: 0 10px; fo
 form { display: flex; flex-direction: column; gap: 15px; }
 input, select, textarea { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 5px; font-size: 16px; background-color: var(--bg-color); color: var(--text-color); }
 button { background-color: var(--primary-color); color: white; padding: 14px 15px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; }
+button:hover { filter: brightness(1.1); }
+button.btn-danger { background-color: var(--danger-color); }
+button.btn-secondary { background-color: var(--secondary-color); font-size: 12px; padding: 5px 10px; }
 
 /* --- LISTAS E CARDS --- */
-#technician-list li { background-color: var(--bg-color); padding: 10px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
-.os-card { background-color: var(--panel-bg-color); border: 1px solid var(--border-color); border-radius: 6px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px var(--shadow-color); position: relative; }
-.os-card .actions { margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+#technician-list li { background-color: var(--bg-color); padding: 10px 15px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.os-card { background-color: var(--panel-bg-color); border: 1px solid var(--border-color); border-radius: 6px; padding: 15px; margin-bottom: 10px; box-shadow: 0 2px 5px var(--shadow-color); position: relative; }
+.os-card-header { display: flex; justify-content: space-between; align-items: center; gap: 5px; }
+.os-card-header p { font-weight: bold; margin: 0; flex: 1; }
+.os-card-header div { display: flex; }
+.card-btn-edit, .card-btn-delete, .card-btn-transfer { background: none; border: none; font-size: 1.3em; cursor: pointer; padding: 5px; color: var(--text-muted-color); }
+.card-btn-edit:hover { color: var(--primary-color); }
+.card-btn-delete:hover { color: var(--danger-color); }
+.card-btn-transfer:hover { color: #2ecc71; } /* Verde para transferência */
 
 /* --- DASHBOARD DE ROTAS (ADMIN) --- */
 #routes-container { display: flex; gap: 20px; overflow-x: auto; padding: 10px 5px 15px 5px; min-height: 300px; }
 .technician-column { min-width: 320px; flex-shrink: 0; background-color: var(--bg-color); border-radius: 8px; padding: 15px; }
 
-/* --- PAINEL DE MONITORAMENTO --- */
-.monitoring-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
-.monitoring-card { border-left: 5px solid var(--border-color); background: var(--panel-bg-color); padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px var(--shadow-color); }
-.monitoring-card .card-header { display: flex; justify-content: space-between; align-items: center; }
-.monitoring-card .card-header h3 { margin: 0; font-size: 1.2em; }
-.tech-status { font-weight: bold; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; }
-.monitoring-card .card-body { padding: 15px 0; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); margin-top: 15px; }
-.monitoring-card .card-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 15px; font-size: 0.9em; color: var(--text-muted-color); }
-.timer { font-weight: bold; color: var(--status-executing-color); }
-
-/* Cores de status para o monitoramento */
-.status-executing { border-left-color: var(--status-executing-color); }
-.status-executing .tech-status { background-color: var(--status-executing-color); color: white; }
-.status-enroute { border-left-color: var(--status-enroute-color); }
-.status-enroute .tech-status { background-color: var(--status-enroute-color); color: white; }
-.status-finished { border-left-color: var(--status-finished-color); }
-.status-finished .tech-status { background-color: var(--status-finished-color); color: white; }
-.status-onroute .tech-status { background-color: var(--text-muted-color); color: var(--panel-bg-color); }
-.status-free .tech-status { background-color: var(--border-color); color: var(--text-muted-color); }
-
-/* --- ESTILOS PARA TELAS MAIORES (TABLET E DESKTOP) --- */
-@media (min-width: 768px) {
-    .main-container { padding: 0 30px 40px 30px; }
-    .panel-group { flex-direction: row; }
-    nav.main-menu ul { padding: 0 30px; }
-    .monitoring-grid { grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); } /* Grade responsiva */
+/* --- MODAL DE EDIÇÃO --- */
+.modal {
+    display: none; 
+    position: fixed; 
+    z-index: 20; 
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%; 
+    overflow: auto; 
+    background-color: rgba(0,0,0,0.6);
+    justify-content: center;
+    align-items: center;
 }
+.modal-content {
+    background-color: var(--panel-bg-color);
