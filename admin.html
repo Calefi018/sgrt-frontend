@@ -48,26 +48,6 @@
 
     <div class="panel">
         <h2>Gerenciar Ordens de Serviço</h2>
-        <form id="form-create-os">
-            <h3>Criar Nova OS</h3>
-            <input type="number" id="os-number" placeholder="Nº da OS" required>
-            <input type="text" id="client-name" placeholder="Nome do Cliente" required>
-            <input type="text" id="address" placeholder="Endereço" required>
-            <input type="text" id="problem" placeholder="Descrição do Problema" required>
-            <select id="priority">
-                <option value="D1">Prioridade D1</option>
-                <option value="D2">Prioridade D2</option>
-            </select>
-            <select id="period">
-                <option value="MANHA">Manhã</option>
-                <option value="TARDE">Tarde</option>
-            </select>
-            <select id="os-technician-select" required></select>
-            <textarea id="notes" placeholder="Observações"></textarea>
-            <button type="submit">Criar e Atribuir OS</button>
-        </form>
-        
-        <hr>
         <h3>Importar Rotas em Massa</h3>
         <form id="form-import-routes">
             <textarea id="bulk-routes" rows="10" placeholder="Cole as rotas aqui, uma por linha.&#10;Formato: Nº OS - Cliente - Endereço - Problema - Prioridade"></textarea>
