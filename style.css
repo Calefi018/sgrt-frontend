@@ -140,11 +140,15 @@ li:last-child {
 /* style.css - Adicionar no final */
 
 /* --- Estilos do Menu de Navegação --- */
+/* style.css - SUBSTITUA A SEÇÃO DO MENU POR ESTA */
+
+/* --- Estilos do Menu de Navegação --- */
 nav.main-menu {
-    background-color: #2c3e50;
-    padding: 0 20px;
+    background-color: #ffffff; /* Fundo branco */
+    padding: 0 30px;
     margin-bottom: 30px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Sombra suave */
+    border-bottom: 1px solid #e0e0e0;
 }
 
 nav.main-menu ul {
@@ -157,20 +161,23 @@ nav.main-menu ul {
 }
 
 nav.main-menu .logo {
-    color: white;
+    color: #2c3e50; /* Texto escuro para o logo */
     font-size: 1.5em;
     font-weight: bold;
     padding: 15px 0;
+    text-decoration: none;
 }
 
 nav.main-menu .nav-links a {
-    color: white;
+    color: #555; /* Texto cinza escuro para os links */
     text-decoration: none;
     padding: 20px 15px;
     display: block;
-    transition: background-color 0.3s;
+    transition: color 0.3s, background-color 0.3s;
+    font-weight: 500;
 }
 
 nav.main-menu .nav-links a:hover {
-    background-color: #34495e;
+    background-color: #f5f5f5; /* Fundo cinza claro ao passar o mouse */
+    color: #007bff; /* Cor de destaque azul */
 }
