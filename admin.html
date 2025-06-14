@@ -131,12 +131,55 @@
         });
 
         // --- LÓGICA DE ORDENS DE SERVIÇO (Similar a antes) ---
-        const osForm = document.getElementById('form-create-os');
-        const routesContainer = document.getElementById('routes-container');
+        // admin.html - Dentro da tag <script>
 
-        async function loadAllOrders() {
-            // ... (A lógica para carregar as OS continua a mesma do arquivo index.html)
-            // Por simplicidade, vamos deixar a recarga manual por enquanto.
+// --- LÓGICA DE ORDENS DE SERVIÇO (VERSÃO CORRIGIDA) ---
+const osForm = document.getElementById('form-create-os');
+const routesContainer = document.getElementById('routes-container');
+
+// AINDA PRECISAMOS IMPLEMENTAR A VISUALIZAÇÃO DAS ROTAS AQUI, MAS A CRIAÇÃO VAI FUNCIONAR.
+async function loadAllOrders() {
+    console.log("Visualização de rotas ainda a ser implementada.");
+    routesContainer.innerHTML = "<p>A visualização das rotas do dia será adicionada aqui.</p>";
+}
+
+osForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const osData = {
+        orderNumber: parseInt(document.getElementById('os-number').value),
+        clientName: document.getElementById('client-name').value,
+        address: document.getElementById('address').value,
+        problemDescription: document.getElementById('problem').value,
+        priority: document.getElementById('priority').value,
+        period: document.getElementById('period').value,
+        notes: document.getElementById('notes').value,
+        technicianId: document.getElementById('os-technician-select').value
+    };
+
+    if (!osData.technicianId) {
+        alert('Por favor, selecione um técnico!');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/service-orders`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(osData)
+        });
+
+        if (response.ok) {
+            alert('Ordem de Serviço criada e atribuída com sucesso!');
+            osForm.reset();
+            // No futuro, aqui chamaremos loadAllOrders() para atualizar a lista automaticamente.
+        } else {
+            alert('Falha ao criar a Ordem de Serviço.');
+        }
+    } catch (error) {
+        console.error("Erro ao criar OS:", error);
+        alert('Erro de conexão ao criar OS.');
+    }
+});
         }
 
         osForm.addEventListener('submit', async (e) => {
