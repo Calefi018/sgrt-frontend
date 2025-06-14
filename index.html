@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Gestão de Rotas</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Painel do Administrador</h1>
+
+    <section>
+        <h2>Criar Nova Ordem de Serviço</h2>
+        <form id="form-create-os">
+            <input type="number" id="os-number" placeholder="Nº da OS" required>
+            <input type="text" id="client-name" placeholder="Nome do Cliente" required>
+            <input type="text" id="address" placeholder="Endereço" required>
+            <input type="text" id="problem" placeholder="Descrição do Problema" required>
+            <select id="priority">
+                <option value="D1">Prioridade D1</option>
+                <option value="D2">Prioridade D2</option>
+            </select>
+            <select id="period">
+                <option value="MANHA">Manhã</option>
+                <option value="TARDE">Tarde</option>
+            </select>
+            <select id="technician-select" required></select>
+            <textarea id="notes" placeholder="Observações"></textarea>
+            <button type="submit">Criar OS</button>
+        </form>
+    </section>
+
+    <section>
+        <h2>Rotas do Dia</h2>
+        <div id="routes-container"></div>
+    </section>
+
+    <script>
+        // IMPORTANTE: Substitua pela URL da sua API no Render
+        const API_URL = 'https://sgrt-api.onrender.com';
+
+        const techSelect = document.getElementById('technician-select');
+        const routesContainer = document.getElementById('routes-container');
+        const form = document.getElementById('form-create-os');
+
+        // Função para carregar os técnicos no <select>
+        async function loadTechnicians() {
+            const response = await fetch(`${API_URL}/technicians`);
+            const technicians = await response.json();
+            techSelect.innerHTML = '<option value="">Selecione um Técnico</option>';
+            technicians.forEach(tech => {
+                const option = document.createElement('option');
+                option.value = tech.id;
+                option.textContent = tech.name;
+                techSelect.appendChild(option);
+            });
+        }
+
+        // Função para carregar e exibir todas as OS
+        async function loadAllOrders() {
+            const response = await fetch(`${API_URL}/service-orders`);
+            const orders = await response.json();
+            
+            // Agrupar por técnico
+            const routesByTechnician = orders.reduce((acc, order) => {
+                const techName = order.technician.name;
+                if (!acc[techName]) {
+                    acc[techName] = [];
+                }
+                acc[techName].push(order);
+                return acc;
+            }, {});
+
+            routesContainer.innerHTML = '';
+            for (const techName in routesByTechnician) {
+                const techDiv = document.createElement('div');
+                techDiv.className = 'technician-route';
+                let ordersHtml = `<h3>${techName}</h3>`;
+                
+                routesByTechnician[techName].forEach(order => {
+                    ordersHtml += `
+                        <div class="os-card">
+                            <p><strong>OS:</strong> ${order.orderNumber} - ${order.clientName}</p>
+                            <p><strong>Endereço:</strong> ${order.address}</p>
+                            <p><strong>Problema:</strong> ${order.problemDescription}</p>
+                            <p><strong>Status:</strong> <span class="status-${order.status.toLowerCase()}">${order.status}</span></p>
+                        </div>
+                    `;
+                });
+                techDiv.innerHTML = ordersHtml;
+                routesContainer.appendChild(techDiv);
+            }
+        }
+        
+        // Evento para lidar com a criação de OS
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newOrderData = {
+                orderNumber: document.getElementById('os-number').value,
+                clientName: document.getElementById('client-name').value,
+                address: document.getElementById('address').value,
+                problemDescription: document.getElementById('problem').value,
+                priority: document.getElementById('priority').value,
+                period: document.getElementById('period').value,
+                notes: document.getElementById('notes').value,
+                technicianId: techSelect.value,
+            };
+
+            const response = await fetch(`${API_URL}/service-orders`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newOrderData)
+            });
+
+            if (response.ok) {
+                alert('OS criada com sucesso!');
+                form.reset();
+                loadAllOrders(); // Recarrega as ordens
+            } else {
+                alert('Falha ao criar OS.');
+            }
+        });
+
+        // Carregar dados iniciais quando a página abre
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTechnicians();
+            loadAllOrders();
+        });
+    </script>
+</body>
+</html>
