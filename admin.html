@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Gestão SGRT</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .container { display: flex; gap: 40px; }
+        .panel { flex: 1; }
+        h2 { border-bottom: 2px solid #eee; padding-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Painel de Gestão SGRT</h1>
+
+    <div class="container">
+        <div class="panel">
+            <h2>Gerenciar Técnicos</h2>
+            <form id="form-create-technician">
+                <h3>Adicionar Novo Técnico</h3>
+                <input type="text" id="tech-name" placeholder="Nome do Técnico" required>
+                <input type="email" id="tech-email" placeholder="Email do Técnico" required>
+                <input type="password" id="tech-password" placeholder="Senha Temporária" required>
+                <button type="submit">Adicionar Técnico</button>
+            </form>
+            <hr>
+            <h3>Técnicos Cadastrados</h3>
+            <ul id="technician-list">
+                <li>Carregando...</li>
+            </ul>
+        </div>
+
+        <div class="panel">
+            <h2>Gerenciar Ordens de Serviço</h2>
+            <form id="form-create-os">
+                <h3>Criar Nova OS</h3>
+                <input type="number" id="os-number" placeholder="Nº da OS" required>
+                <input type="text" id="client-name" placeholder="Nome do Cliente" required>
+                <input type="text" id="address" placeholder="Endereço" required>
+                <input type="text" id="problem" placeholder="Descrição do Problema" required>
+                <select id="priority">
+                    <option value="D1">Prioridade D1</option>
+                    <option value="D2">Prioridade D2</option>
+                </select>
+                <select id="period">
+                    <option value="MANHA">Manhã</option>
+                    <option value="TARDE">Tarde</option>
+                </select>
+                <select id="os-technician-select" required></select>
+                <textarea id="notes" placeholder="Observações"></textarea>
+                <button type="submit">Criar e Atribuir OS</button>
+            </form>
+            <hr>
+            <h3>Rotas do Dia</h3>
+            <div id="routes-container"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://sgrt-api.onrender.com'; // Use a URL da sua API
+
+        // --- LÓGICA DE TÉCNICOS ---
+        const techForm = document.getElementById('form-create-technician');
+        const techList = document.getElementById('technician-list');
+        const osTechSelect = document.getElementById('os-technician-select');
+
+        async function loadTechnicians() {
+            try {
+                const response = await fetch(`${API_URL}/technicians`);
+                if (!response.ok) throw new Error('Falha na resposta da API');
+                const technicians = await response.json();
+                
+                techList.innerHTML = '';
+                osTechSelect.innerHTML = '<option value="">Selecione um Técnico</option>';
+
+                if (technicians.length === 0) {
+                    techList.innerHTML = '<li>Nenhum técnico cadastrado.</li>';
+                }
+
+                technicians.forEach(tech => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `${tech.name} (${tech.email})`;
+                    techList.appendChild(listItem);
+
+                    const optionItem = document.createElement('option');
+                    optionItem.value = tech.id;
+                    optionItem.textContent = tech.name;
+                    osTechSelect.appendChild(optionItem);
+                });
+            } catch (error) {
+                console.error("Erro ao carregar técnicos:", error);
+                techList.innerHTML = '<li>Erro ao carregar técnicos.</li>';
+            }
+        }
+
+        techForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const techData = {
+                name: document.getElementById('tech-name').value,
+                email: document.getElementById('tech-email').value,
+                password: document.getElementById('tech-password').value,
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/technicians`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(techData)
+                });
+                if (response.ok) {
+                    alert('Técnico adicionado com sucesso!');
+                    techForm.reset();
+                    loadTechnicians(); // Recarrega a lista
+                } else {
+                    alert('Falha ao adicionar técnico. O email já pode existir.');
+                }
+            } catch (error) {
+                console.error("Erro ao criar técnico:", error);
+                alert('Erro de conexão ao criar técnico.');
+            }
+        });
+
+        // --- LÓGICA DE ORDENS DE SERVIÇO (Similar a antes) ---
+        const osForm = document.getElementById('form-create-os');
+        const routesContainer = document.getElementById('routes-container');
+
+        async function loadAllOrders() {
+            // ... (A lógica para carregar as OS continua a mesma do arquivo index.html)
+            // Por simplicidade, vamos deixar a recarga manual por enquanto.
+        }
+
+        osForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            // Lógica para criar OS (exatamente como antes)
+        });
+
+        // Carregar tudo quando a página abre
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTechnicians();
+            // loadAllOrders();
+        });
+    </script>
+</body>
+</html>
