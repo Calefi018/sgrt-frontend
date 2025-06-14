@@ -7,7 +7,8 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <nav class="main-menu">
+
+<nav class="main-menu">
     <ul>
         <li><a href="/index.html" class="logo">SGRT</a></li>
         <li class="nav-links">
@@ -16,97 +17,102 @@
         </li>
     </ul>
 </nav>
-    <h1>Minha Rota do Dia</h1>
 
-    <div class="container">
-        <div class="panel" id="my-route-panel">
-            <div id="my-route-container">
-                <p>Carregando rota...</p>
-            </div>
+<h1>Minha Rota do Dia</h1>
+
+<div class="container">
+    <div class="panel" id="my-route-panel">
+        <div id="my-route-container">
+            <p>Carregando rota...</p>
         </div>
     </div>
+</div>
 
-    <script>
-        const API_URL = 'https://sgrt-api.onrender.com'; // Use a URL da sua API
-        const routeContainer = document.getElementById('my-route-container');
+<script>
+    const API_URL = 'https://sgrt-api.onrender.com'; // Sua URL da API
+    const routeContainer = document.getElementById('my-route-container');
 
-        // Função para atualizar o status de uma OS
-        async function updateStatus(orderId, newStatus) {
-            try {
-                const response = await fetch(`${API_URL}/service-orders/${orderId}/status`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: newStatus })
-                });
+    async function updateStatus(orderId, newStatus) {
+        let justification = null;
 
-                if (response.ok) {
-                    alert(`Status atualizado para ${newStatus}`);
-                    loadMyRoute(); // Recarrega a rota para mostrar a mudança de status
-                } else {
-                    alert('Falha ao atualizar o status. Tente novamente em instantes.');
-                }
-            } catch (error) {
-                console.error('Erro ao atualizar status:', error);
-                alert('Erro de conexão ao atualizar status. Verifique sua internet.');
-            }
-        }
-
-        // Função principal para carregar a rota do técnico
-        async function loadMyRoute() {
-            // Pega o ID do técnico da URL (ex: technician.html?id=abcdef123)
-            const params = new URLSearchParams(window.location.search);
-            const technicianId = params.get('id');
-
-            if (!technicianId) {
-                routeContainer.innerHTML = '<h2>Erro: ID do técnico não foi encontrado na URL.</h2>';
+        if (newStatus === 'REAGENDADA') {
+            justification = prompt("Por favor, digite o motivo do reagendamento:");
+            if (!justification) { 
+                alert("O reagendamento foi cancelado pois a justificativa é obrigatória.");
                 return;
             }
-
-            routeContainer.innerHTML = '<p>Buscando sua rota...</p>'; // Feedback visual
-
-            try {
-                const response = await fetch(`${API_URL}/my-route/${technicianId}`);
-
-                // Se a API estiver "dormindo", o !response.ok pode pegar o erro 502
-                if (!response.ok) {
-                    throw new Error(`Erro da API: ${response.statusText}`);
-                }
-                
-                const orders = await response.json();
-
-                if (orders.length === 0) {
-                    routeContainer.innerHTML = '<h2>Nenhuma Ordem de Serviço atribuída para hoje.</h2>';
-                    return;
-                }
-                
-                routeContainer.innerHTML = ''; // Limpa a mensagem "Buscando..."
-
-                orders.forEach(order => {
-                    const osCard = document.createElement('div');
-                    osCard.className = 'os-card';
-                    osCard.innerHTML = `
-                        <p><strong>OS:</strong> ${order.orderNumber} - <strong>Cliente:</strong> ${order.clientName}</p>
-                        <p><strong>Endereço:</strong> ${order.address}</p>
-                        <p><strong>Problema:</strong> ${order.problemDescription}</p>
-                        <p><strong>Status:</strong> <span class="status-${order.status.toLowerCase()}">${order.status.replace('_', ' ')}</span></p>
-                        <div class="actions">
-                            <button onclick="updateStatus('${order.id}', 'A_CAMINHO')">A Caminho</button>
-                            <button onclick="updateStatus('${order.id}', 'EXECUTANDO')">Executando</button>
-                            <button onclick="updateStatus('${order.id}', 'FINALIZADA')">Finalizar</button>
-                            <button onclick="updateStatus('${order.id}', 'REAGENDADA')">Reagendar</button>
-                        </div>
-                    `;
-                    routeContainer.appendChild(osCard);
-                });
-
-            } catch (error) {
-                console.error('Erro ao buscar rota:', error);
-                routeContainer.innerHTML = '<h2>Não foi possível carregar sua rota. A API pode estar indisponível. Tente recarregar a página em um minuto.</h2>';
-            }
         }
 
-        // Inicia o processo quando a página é carregada
-        document.addEventListener('DOMContentLoaded', loadMyRoute);
-    </script>
+        try {
+            const response = await fetch(`${API_URL}/service-orders/${orderId}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus, justification: justification })
+            });
+
+            if (response.ok) {
+                alert(`Status atualizado para ${newStatus}`);
+                loadMyRoute();
+            } else {
+                alert('Falha ao atualizar o status. Tente novamente em instantes.');
+            }
+        } catch (error) {
+            console.error('Erro ao atualizar status:', error);
+            alert('Erro de conexão ao atualizar status. Verifique sua internet.');
+        }
+    }
+
+    async function loadMyRoute() {
+        const params = new URLSearchParams(window.location.search);
+        const technicianId = params.get('id');
+
+        if (!technicianId) {
+            routeContainer.innerHTML = '<h2>Erro: ID do técnico não foi encontrado na URL.</h2>';
+            return;
+        }
+
+        routeContainer.innerHTML = '<p>Buscando sua rota...</p>';
+
+        try {
+            const response = await fetch(`${API_URL}/my-route/${technicianId}`);
+            if (!response.ok) {
+                throw new Error(`Erro da API: ${response.statusText}`);
+            }
+            const orders = await response.json();
+
+            if (orders.length === 0) {
+                routeContainer.innerHTML = '<h2>Nenhuma Ordem de Serviço atribuída para hoje.</h2>';
+                return;
+            }
+            
+            routeContainer.innerHTML = ''; 
+
+            orders.forEach(order => {
+                const osCard = document.createElement('div');
+                osCard.className = 'os-card';
+                osCard.innerHTML = `
+                    <p><strong>OS Cliente ID:</strong> ${order.clientId} - <strong>Cliente:</strong> ${order.clientName}</p>
+                    <p><strong>Endereço:</strong> ${order.address}</p>
+                    <p><strong>Problema:</strong> ${order.problemDescription}</p>
+                    <p><strong>Observações:</strong> ${order.notes || 'Nenhuma'}</p>
+                    <p><strong>Status:</strong> <span class="status-${order.status.toLowerCase()}">${order.status.replace('_', ' ')}</span></p>
+                    <div class="actions">
+                        <button onclick="updateStatus('${order.id}', 'A_CAMINHO')">A Caminho</button>
+                        <button onclick="updateStatus('${order.id}', 'EXECUTANDO')">Executando</button>
+                        <button onclick="updateStatus('${order.id}', 'FINALIZADA')">Finalizar</button>
+                        <button onclick="updateStatus('${order.id}', 'REAGENDADA')">Reagendar</button>
+                    </div>
+                `;
+                routeContainer.appendChild(osCard);
+            });
+
+        } catch (error) {
+            console.error('Erro ao buscar rota:', error);
+            routeContainer.innerHTML = '<h2>Não foi possível carregar sua rota. A API pode estar indisponível. Tente recarregar a página em um minuto.</h2>';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadMyRoute);
+</script>
 </body>
 </html>
