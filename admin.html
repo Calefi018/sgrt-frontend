@@ -17,7 +17,7 @@
                 <ul>
                     <li><a href="/admin.html" class="active">📝 <span>Gestão de Rotas</span></a></li>
                     <li><a href="/monitoring.html">📺 <span>Monitoramento</span></a></li>
-                    <li><a href="#">📊 <span>Relatórios (Futuro)</span></a></li>
+                    <li><a href="/reports.html">📊 <span>Relatórios</span></a></li>
                 </ul>
             </nav>
         </div>
@@ -48,19 +48,7 @@
                 <ul id="technician-list"><li>Carregando...</li></ul>
             </div>
             <div class="panel">
-                <h2>Adicionar Ordens de Serviço</h2>
-                <form id="form-create-os" style="display: none;">
-                    <h3>Adicionar OS Única</h3>
-                    <input type="number" id="os-clientId" placeholder="ID do Cliente" required>
-                    <input type="text" id="os-clientName" placeholder="Nome do Cliente" required>
-                    <input type="text" id="os-address" placeholder="Endereço (Bairro)" required>
-                    <input type="text" id="os-problem" placeholder="Serviço/Problema" required>
-                    <select id="os-priority"><option value="D1">D1</option><option value="D2">D2</option></select>
-                    <select id="os-period"><option value="MANHA">Manhã</option><option value="TARDE">Tarde</option></select>
-                    <select id="os-technician-select" required><option value="">Atribuir para...</option></select>
-                    <button type="submit">Criar e Atribuir OS</button>
-                </form>
-                <h3>Importar Rotas em Massa</h3>
+                <h2>Importar Ordens de Serviço</h2>
                 <form id="form-import-routes">
                     <textarea id="bulk-routes" rows="10" placeholder="Cole aqui o bloco de texto do seu documento..."></textarea>
                     <button type="submit">Importar Rotas do Texto</button>
@@ -106,10 +94,8 @@
     // --- ELEMENTOS DO DOM ---
     const techForm = document.getElementById('form-create-technician');
     const techList = document.getElementById('technician-list');
-    const osTechSelect = document.getElementById('os-technician-select');
     const routesContainer = document.getElementById('routes-container');
     const importForm = document.getElementById('form-import-routes');
-    const osForm = document.getElementById('form-create-os');
     const themeToggle = document.getElementById('theme-toggle');
     const editModal = document.getElementById('edit-os-modal');
     const editForm = document.getElementById('form-edit-os');
@@ -145,7 +131,6 @@
             const response = await fetch(`${API_URL}/technicians`);
             const technicians = await response.json();
             techList.innerHTML = '';
-            osTechSelect.innerHTML = '<option value="">Atribuir para...</option>';
             if (technicians.length === 0) {
                 techList.innerHTML = '<li>Nenhum técnico cadastrado.</li>';
                 return;
@@ -154,20 +139,25 @@
                 const li = document.createElement('li');
                 li.innerHTML = `<span>${tech.name} (${tech.email})</span><div><button onclick="editTechnician('${tech.id}', '${tech.name}', '${tech.email}')" class="btn-secondary">Editar</button><button onclick="deleteTechnician('${tech.id}')" class="btn-danger">Excluir</button></div>`;
                 techList.appendChild(li);
-                const opt = document.createElement('option');
-                opt.value = tech.id;
-                opt.textContent = tech.name;
-                osTechSelect.appendChild(opt);
             });
         } catch (error) {
             techList.innerHTML = `<li>Erro ao carregar técnicos.</li>`;
         }
     }
+    
     techForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const data = { name: document.getElementById('tech-name').value, email: document.getElementById('tech-email').value, password: document.getElementById('tech-password').value };
+        const data = {
+            name: document.getElementById('tech-name').value,
+            email: document.getElementById('tech-email').value,
+            password: document.getElementById('tech-password').value
+        };
         try {
-            const response = await fetch(`${API_URL}/technicians`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            const response = await fetch(`${API_URL}/technicians`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
             if (response.ok) {
                 alert('Técnico adicionado com sucesso!');
                 techForm.reset();
@@ -179,8 +169,9 @@
             alert('Erro de conexão ao criar técnico.');
         }
     });
+
     async function deleteTechnician(id) {
-        if (!confirm('Tem certeza que deseja excluir este técnico? Todas as OS dele também serão removidas.')) return;
+        if (!confirm('Tem certeza que quer excluir este técnico? Todas as OS dele também serão removidas.')) return;
         try {
             const response = await fetch(`${API_URL}/technicians/${id}`, { method: 'DELETE' });
             if (response.ok) {
@@ -194,6 +185,7 @@
             alert('Erro de conexão ao excluir técnico.');
         }
     }
+
     function editTechnician(id, name, email) {
         const newName = prompt("Digite o novo nome:", name);
         if (newName === null) return;
@@ -203,9 +195,14 @@
             updateTechnician(id, newName, newEmail);
         }
     }
+
     async function updateTechnician(id, name, email) {
         try {
-            const response = await fetch(`${API_URL}/technicians/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email }) });
+            const response = await fetch(`${API_URL}/technicians/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email })
+            });
             if (response.ok) {
                 alert('Técnico atualizado com sucesso!');
                 loadTechnicians();
@@ -214,7 +211,7 @@
                 alert('Falha ao atualizar o técnico.');
             }
         } catch (err) {
-            alert('Erro de conexão ao atualizar técnico.');
+            alert('Erro de conexão ao atualizar o técnico.');
         }
     }
 
@@ -226,10 +223,13 @@
             const routesByTechnician = orders.reduce((acc, order) => {
                 const tech = order.technician;
                 if (!tech) return acc;
-                if (!acc[tech.id]) acc[tech.id] = { name: tech.name, orders: [] };
+                if (!acc[tech.id]) {
+                    acc[tech.id] = { name: tech.name, orders: [] };
+                }
                 acc[tech.id].orders.push(order);
                 return acc;
             }, {});
+            
             routesContainer.innerHTML = '';
             if (Object.keys(routesByTechnician).length === 0) {
                 routesContainer.innerHTML = '<p>Nenhuma rota para exibir.</p>';
@@ -251,7 +251,9 @@
                 routesContainer.appendChild(column);
             }
             document.querySelectorAll('.os-list').forEach(list => { new Sortable(list, { group: 'shared-os', animation: 150, onEnd: saveNewOrder }); });
-        } catch (error) { routesContainer.innerHTML = `<p>Erro ao carregar rotas.</p>`; }
+        } catch (error) {
+            routesContainer.innerHTML = `<p>Erro ao carregar rotas.</p>`;
+        }
     }
 
     function renderOsCard(order) {
@@ -274,12 +276,62 @@
                     </div>
                 </div>`;
     }
+    
+    async function deleteOrder(id) {
+        if (!confirm('Excluir esta OS?')) return;
+        try {
+            const response = await fetch(`${API_URL}/service-orders/${id}`, { method: 'DELETE' });
+            if (response.ok) {
+                loadAllOrders();
+            } else {
+                alert('Falha ao excluir OS.');
+            }
+        } catch (e) {
+            alert('Erro de conexão.');
+        }
+    }
 
-    async function deleteOrder(id) { if (!confirm('Excluir esta OS?')) return; try { const r = await fetch(`${API_URL}/service-orders/${id}`, { method: 'DELETE' }); if (r.ok) loadAllOrders(); else alert('Falha ao excluir OS.'); } catch (e) { alert('Erro de conexão.'); } }
-    async function saveNewOrder(evt) { const allCards = Array.from(document.querySelectorAll('.os-card')); const orderedIds = allCards.map(card => card.dataset.id); try { await fetch(`${API_URL}/service-orders/reorder`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderedIds }) }); } catch (e) { alert('Erro ao salvar nova ordem.'); } }
-    async function transferOrder(id) { try { const r = await fetch(`${API_URL}/technicians`); const t = await r.json(); let opts = t.map((tech, i) => `${i + 1} - ${tech.name}`).join('\n'); const c = prompt(`Transferir para:\n${opts}`); if (!c) return; const i = parseInt(c) - 1; if (t[i]) { const nTID = t[i].id; if (confirm(`Tem certeza que quer transferir para ${t[i].name}?`)) { await fetch(`${API_URL}/service-orders/${id}/transfer`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ newTechnicianId: nTID }) }); loadAllOrders(); } } else { alert("Seleção inválida."); } } catch (e) { alert('Erro ao buscar técnicos.'); } }
+    async function saveNewOrder(evt) {
+        const allCards = Array.from(document.querySelectorAll('.os-card'));
+        const orderedIds = allCards.map(card => card.dataset.id);
+        try {
+            await fetch(`${API_URL}/service-orders/reorder`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderedIds })
+            });
+        } catch (e) {
+            alert('Erro ao salvar nova ordem.');
+        }
+    }
 
-    // --- LÓGICA DO IMPORTADOR INTELIGENTE ---
+    async function transferOrder(id) {
+        try {
+            const techResponse = await fetch(`${API_URL}/technicians`);
+            const technicians = await techResponse.json();
+            let options = technicians.map((tech, i) => `${i + 1} - ${tech.name}`).join('\n');
+            const choice = prompt(`Transferir para:\n${options}`);
+            if (!choice) return;
+            const index = parseInt(choice) - 1;
+            if (technicians[index]) {
+                const newTechnicianId = technicians[index].id;
+                if (confirm(`Tem certeza que quer transferir para ${technicians[index].name}?`)) {
+                    await fetch(`${API_URL}/service-orders/${id}/transfer`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ newTechnicianId })
+                    });
+                    loadAllOrders();
+                }
+            } else {
+                alert("Seleção inválida.");
+            }
+        } catch (e) {
+            alert('Erro ao buscar técnicos.');
+        }
+    }
+
+    // --- LÓGICA DO IMPORTADOR INTELIGENTE v2.0 ---
     function parseOsLine(line) {
         const idMatch = line.match(/^(\d+)\s*-/);
         if (!idMatch) return { success: false, reason: "Não inicia com 'ID - '" };
@@ -304,6 +356,7 @@
         if (parts.length < 3) return { success: false, reason: "Informações faltando (Nome, Bairro ou Serviço)" };
         return { success: true, data: { clientId: parseInt(clientId), priority, notes, clientName: parts[0], problemDescription: parts[parts.length - 1], address: parts.slice(1, -1).join(' - ') } };
     }
+
     importForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const text = document.getElementById('bulk-routes').value;
@@ -327,7 +380,7 @@
             const foundTechName = technicianNames.find(name => trimmedLine.toUpperCase() === name);
             if (foundTechName) {
                 currentTechnician = technicians.find(t => t.name.toUpperCase() === foundTechName);
-                positionCounter = 0; // Reseta a posição para cada novo técnico
+                positionCounter = 0;
                 continue;
             }
             if (trimmedLine.toUpperCase().includes('MANHÃ')) { currentPeriod = "MANHA"; continue; }
@@ -352,10 +405,9 @@
         }
         
         let summary = `Importação finalizada!\n✔️ ${successCount} OS foram importadas com sucesso.`;
-        if (unfoundTechs.size > 0) summary += `\n\n⚠️ As rotas para os seguintes nomes foram ignoradas (Técnicos não cadastrados):\n- ${[...unfoundTechs].join('\n- ')}`;
+        if (unfoundTechs.size > 0) summary += `\n\n⚠️ Rotas ignoradas (Técnicos não cadastrados):\n- ${[...unfoundTechs].join('\n- ')}`;
         if (failedLines.length > 0) summary += `\n\n❌ As seguintes linhas falharam no processamento:\n- ${failedLines.join('\n- ')}`;
         alert(summary);
-
         loadAllOrders();
         importForm.reset();
     });
@@ -384,8 +436,16 @@
         const updatedData = { clientId: document.getElementById('edit-clientId').value, clientName: document.getElementById('edit-clientName').value, address: document.getElementById('edit-address').value, problemDescription: document.getElementById('edit-problem').value, priority: document.getElementById('edit-priority').value, period: document.getElementById('edit-period').value, notes: document.getElementById('edit-notes').value };
         try {
             const response = await fetch(`${API_URL}/service-orders/${orderId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatedData) });
-            if (response.ok) { alert('OS atualizada!'); closeEditModal(); loadAllOrders(); } else { alert('Falha ao atualizar.'); }
-        } catch (error) { alert('Erro de conexão.'); }
+            if (response.ok) {
+                alert('OS atualizada!');
+                closeEditModal();
+                loadAllOrders();
+            } else {
+                alert('Falha ao atualizar.');
+            }
+        } catch (error) {
+            alert('Erro de conexão.');
+        }
     });
     window.onclick = (event) => { if (event.target == editModal) closeEditModal(); }
 </script>
