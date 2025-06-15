@@ -63,9 +63,10 @@
             localStorage.setItem('sgrt_theme', theme);
         });
 
-        updateDashboard(); // Carrega o dashboard imediatamente
-        setInterval(updateDashboard, 30000); // Atualiza a cada 30 segundos
+        updateDashboard();
+        setInterval(updateDashboard, 20000); // Atualiza a cada 20 segundos para maior fluidez
     });
+
 
     // --- FUNÇÃO PRINCIPAL DO DASHBOARD ---
     async function updateDashboard() {
@@ -94,7 +95,6 @@
 
         } catch (error) {
             console.error("Erro ao atualizar o dashboard:", error);
-            dashboard.innerHTML = '<p>Não foi possível carregar os dados de monitoramento. A API pode estar offline.</p>';
         }
     }
 
@@ -118,7 +118,6 @@
         if (orders.length > 0 && orders.every(o => o.status === 'FINALIZADA')) {
             return { text: 'Finalizou Rota', os: null, class: 'status-finished' };
         }
-
         return { text: 'Livre', os: null, class: 'status-free' };
     }
 
@@ -138,6 +137,19 @@
             timerHtml = `<div class="timer">⏳ ${duration} min em execução</div>`;
         }
 
+        let locationHtml = '';
+        if (statusInfo.os) {
+            if (statusInfo.os.status === 'A_CAMINHO' && statusInfo.os.startTravelLatitude) {
+                const lat = statusInfo.os.startTravelLatitude;
+                const lon = statusInfo.os.startTravelLongitude;
+                locationHtml = `<a href="https://maps.google.com/?q=${lat},${lon}" target="_blank" class="map-link">📍 Ver Ponto de Partida</a>`;
+            } else if (statusInfo.os.status === 'EXECUTANDO' && statusInfo.os.executionLatitude) {
+                const lat = statusInfo.os.executionLatitude;
+                const lon = statusInfo.os.executionLongitude;
+                locationHtml = `<a href="https://maps.google.com/?q=${lat},${lon}" target="_blank" class="map-link">🛠️ Ver Local de Execução</a>`;
+            }
+        }
+
         let currentOsHtml = '<p>Nenhuma OS ativa no momento.</p>';
         if (statusInfo.os) {
             currentOsHtml = `
@@ -153,6 +165,7 @@
             </div>
             <div class="card-body">
                 ${currentOsHtml}
+                ${locationHtml}
             </div>
             <div class="card-footer">
                 <p><strong>Progresso:</strong> ${metrics.completed} / ${metrics.total} OS</p>
