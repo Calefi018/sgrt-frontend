@@ -1,4 +1,4 @@
-/* sgrt-frontend/style.css (Versão com Sidebar e Otimização Mobile) */
+/* sgrt-frontend/style.css (Versão Corrigida e Verificada) */
 
 /* --- Variáveis de Cor e Tema --- */
 :root {
@@ -10,13 +10,12 @@
     --border-color: #e9ecef;
     --primary-color: #007bff;
     --primary-hover-color: #0069d9;
+    --danger-color: #dc3545;
+    --danger-hover-color: #c82333;
+    --secondary-color: #6c757d;
+    --secondary-hover-color: #5a6268;
     --shadow-color: rgba(0, 0, 0, 0.08);
-
-    --status-pendente: #6c757d;
-    --status-executando: #ffc107;
-    --status-caminho: #17a2b8;
-    --status-finalizada: #28a745;
-    --status-reagendada: #dc3545;
+    --font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
 body.dark-mode {
@@ -28,6 +27,8 @@ body.dark-mode {
     --border-color: #3a3a3c;
     --primary-color: #0a84ff;
     --primary-hover-color: #0060df;
+    --danger-color: #e74c3c;
+    --danger-hover-color: #c0392b;
     --shadow-color: rgba(0, 0, 0, 0.2);
 }
 
@@ -35,14 +36,19 @@ body.dark-mode {
 * { box-sizing: border-box; }
 html { height: 100%; }
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    font-family: var(--font-family);
     background-color: var(--bg-color);
     color: var(--text-color);
     margin: 0;
     transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
 }
-h1, h2, h3, h4 { color: var(--text-color); }
-p { color: var(--text-muted-color); }
+h1, h2, h3, h4 { color: var(--text-color); margin: 0; }
+h1 { font-size: 1.8em; }
+h2 { font-size: 1.4em; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+p { line-height: 1.6; color: var(--text-muted-color); }
+hr { border: none; border-top: 1px solid var(--border-color); margin: 25px 0; }
+ul { list-style: none; padding: 0; margin: 0; }
+a { color: var(--primary-color); text-decoration: none; }
 
 /* --- Novo Layout Principal com Sidebar --- */
 .app-container {
@@ -57,150 +63,54 @@ p { color: var(--text-muted-color); }
     padding: 20px;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
     transition: width 0.2s;
+    flex-shrink: 0;
 }
-#app-sidebar .logo {
-    font-size: 1.8em;
-    font-weight: bold;
-    text-align: center;
-    margin-bottom: 30px;
-    color: var(--primary-color);
-}
-.sidebar-nav ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-.sidebar-nav li a {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 12px 15px;
-    text-decoration: none;
-    color: var(--text-muted-color);
-    border-radius: 6px;
-    margin-bottom: 5px;
-    font-weight: 500;
-}
-.sidebar-nav li a:hover, .sidebar-nav li a.active {
-    background-color: var(--primary-color);
-    color: white;
-}
+#app-sidebar .logo { font-size: 1.8em; font-weight: bold; text-align: center; margin-bottom: 30px; color: var(--primary-color); }
+.sidebar-nav li a { display: flex; align-items: center; gap: 15px; padding: 12px 15px; text-decoration: none; color: var(--text-muted-color); border-radius: 6px; margin-bottom: 5px; font-weight: 500; }
+.sidebar-nav li a:hover { background-color: var(--bg-color); color: var(--text-color); }
+.sidebar-nav li a.active { background-color: var(--primary-color); color: white; }
 
 .app-content {
     flex: 1;
     padding: 20px;
     overflow-y: auto;
+    width: 100%;
 }
 
 /* --- Cabeçalho dentro do Conteúdo --- */
-.content-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-.content-header h1 {
-    margin: 0;
-    font-size: 1.8em;
-}
-.header-actions {
-    display: flex;
-    gap: 15px;
-}
-.nav-button {
-    background-color: var(--panel-bg-color);
-    color: var(--primary-color);
-    border: 1px solid var(--border-color);
-    padding: 8px 12px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-}
-
-/* --- Painéis e Cards --- */
-.panel {
-    background-color: var(--panel-bg-color);
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px var(--shadow-color);
-    border: 1px solid var(--border-color);
-    margin-bottom: 20px;
-}
-.os-card {
-    background-color: var(--bg-color);
-    border: 1px solid var(--border-color);
-    border-left: 4px solid var(--text-muted-color);
-    padding: 15px;
-    margin-bottom: 10px;
-    border-radius: 6px;
-}
-.os-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.os-card-header p strong {
-    font-size: 1.1em;
-}
-
-/* --- NOVO ESTILO DE STATUS (BADGES) --- */
-.status-badge {
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 0.8em;
-    font-weight: bold;
-    color: white;
-    text-transform: uppercase;
-}
-.status-pendente { background-color: var(--status-pendente); }
-.status-a_caminho { background-color: var(--status-caminho); }
-.status-executando { background-color: var(--status-executando); color: #333; }
-.status-finalizada { background-color: var(--status-finalizada); }
-.status-reagendada { background-color: var(--status-reagendada); }
+.content-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+.content-header h1 { margin: 0; }
+.header-actions { display: flex; gap: 15px; }
+.nav-button { background-color: var(--panel-bg-color); color: var(--primary-color); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: 500; }
+body.dark-mode .nav-button { color: var(--primary-color); border-color: var(--primary-color); }
 
 
-/* --- PAINEL DE MONITORAMENTO --- */
-.monitoring-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
-.monitoring-card { border-left: 5px solid var(--border-color); /* Cor padrão */ background: var(--panel-bg-color); padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px var(--shadow-color); }
-.monitoring-card.status-executing { border-left-color: var(--status-executing); }
-.monitoring-card.status-enroute { border-left-color: var(--status-caminho); }
-.monitoring-card.status-finished { border-left-color: var(--status-finalizada); }
+/* --- Painéis e Grupos --- */
+.panel-group { display: flex; flex-direction: column; gap: 30px; }
+.panel { background-color: var(--panel-bg-color); padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px var(--shadow-color); border: 1px solid var(--border-color); margin-bottom: 30px; }
+.os-card { background-color: var(--bg-color); border: 1px solid var(--border-color); border-left: 4px solid var(--text-muted-color); padding: 15px; margin-bottom: 10px; border-radius: 6px; }
+
+/* --- ESTILO DE STATUS (BADGES) --- */
+.status-badge { padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: bold; color: white; text-transform: uppercase; }
+.status-pendente { background-color: var(--text-muted-color); }
+.status-a_caminho { background-color: #17a2b8; }
+.status-executando { background-color: #ffc107; color: #333; }
+.status-finalizada { background-color: #28a745; }
+.status-reagendada { background-color: var(--danger-color); }
 
 /* --- RESPONSIVIDADE PARA CELULARES --- */
-@media (max-width: 768px) {
-    .app-container {
-        flex-direction: column;
-    }
-    #app-sidebar {
-        width: 100%;
-        height: auto;
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        padding: 5px 15px;
-        border-right: none;
-        border-bottom: 1px solid var(--border-color);
-    }
-    #app-sidebar .logo {
-        font-size: 1.5em;
-        margin: 0;
-    }
-    .sidebar-nav ul {
-        display: flex;
-    }
-    .sidebar-nav li a {
-        padding: 10px;
-        margin: 0;
-    }
-    .sidebar-nav li a span { /* Esconde o texto dos links no menu mobile */
-        display: none;
-    }
-    .app-content {
-        padding: 15px;
-    }
-    .content-header h1 {
-        font-size: 1.5em;
-    }
+@media (max-width: 800px) {
+    .app-container { flex-direction: column; }
+    #app-sidebar { width: 100%; height: auto; flex-direction: row; }
+    #app-sidebar .logo { display: none; }
+    .sidebar-nav ul { display: flex; flex: 1; justify-content: space-around; }
+    .sidebar-nav li a span { display: none; } /* Esconde texto, mostra só ícone */
+    .app-content { padding: 15px; }
+}
+
+/* --- ESTILOS PARA TELAS MAIORES (TABLET E DESKTOP) --- */
+@media (min-width: 801px) {
+    .panel-group { flex-direction: row; }
 }
