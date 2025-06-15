@@ -27,13 +27,14 @@
 
     <main class="app-content">
         <header class="content-header">
-            <h1 id="greeting">Carregando...</h1>
+            <h1 id="greeting"></h1>
             <div class="header-actions">
                 <button id="theme-toggle" class="nav-button">Modo Escuro</button>
             </div>
         </header>
 
         <div class="panel full-width-panel">
+            <h2 style="border: none;">Minhas Ordens de Serviço</h2>
             <div id="my-route-container">
                 <p>Carregando rota...</p>
             </div>
@@ -54,11 +55,9 @@
             return;
         }
 
-        // Esconde os links de admin no menu
         document.getElementById('admin-link').style.display = 'none';
         document.getElementById('monitoring-link').style.display = 'none';
 
-        // Lógica do Tema Escuro
         const themeToggle = document.getElementById('theme-toggle');
         if (localStorage.getItem('sgrt_theme') === 'dark') {
             document.body.classList.add('dark-mode');
@@ -71,16 +70,82 @@
             localStorage.setItem('sgrt_theme', theme);
         });
 
-        // Saudação Personalizada
         const hour = new Date().getHours();
         let greetingText = (hour < 5 || hour >= 18) ? 'Boa noite' : (hour < 12) ? 'Bom dia' : 'Boa tarde';
         document.getElementById('greeting').textContent = `${greetingText}, ${user.name}!`;
         
         loadMyRoute();
-        setInterval(loadMyRoute, 30000); // Atualiza a rota a cada 30 segundos
+        setInterval(loadMyRoute, 30000);
     });
 
     // --- FUNÇÕES DA PÁGINA ---
+    
+    function getCurrentLocation() {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject({ code: -1, message: "Geolocalização não é suportada por este navegador." });
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    resolve({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude
+                    });
+                },
+                (error) => {
+                    reject(error);
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } // Opções para maior precisão
+            );
+        });
+    }
+
+    async function updateStatus(orderId, newStatus) {
+        let location = null;
+        let justification = null;
+
+        if (newStatus === 'A_CAMINHO' || newStatus === 'EXECUTANDO') {
+            try {
+                document.body.style.cursor = 'wait'; // Mostra cursor de espera
+                location = await getCurrentLocation();
+            } catch (error) {
+                document.body.style.cursor = 'default';
+                if (error.code === 1) { // PERMISSION_DENIED
+                    alert("A permissão de localização foi negada. A mudança de status foi cancelada.");
+                } else {
+                    alert(`Não foi possível obter a localização. Tente novamente.\nErro: ${error.message}`);
+                }
+                return; // BLOQUEIA A AÇÃO
+            } finally {
+                document.body.style.cursor = 'default';
+            }
+        }
+        
+        if (newStatus === 'REAGENDADA') {
+            justification = prompt("Por favor, digite o motivo do reagendamento:");
+            if (!justification) {
+                alert("O reagendamento foi cancelado pois a justificativa é obrigatória.");
+                return;
+            }
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/service-orders/${orderId}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus, justification, location })
+            });
+            if (response.ok) {
+                loadMyRoute();
+            } else {
+                alert('Falha ao atualizar o status no servidor.');
+            }
+        } catch (error) {
+            alert('Erro de conexão ao atualizar status.');
+        }
+    }
+    
     function renderOsCard(order) {
         const textToCopy = `${order.clientId} - ${order.clientName}`;
         return `
@@ -115,7 +180,7 @@
             if (!response.ok) throw new Error(`Erro da API`);
             
             const orders = await response.json();
-            
+
             if (orders.length === 0) {
                 routeContainer.innerHTML = '<h2>Nenhuma Ordem de Serviço atribuída para hoje.</h2>';
                 return;
@@ -141,29 +206,6 @@
         } catch (error) {
             routeContainer.innerHTML = `<h2>Não foi possível carregar sua rota. Verifique sua conexão.</h2>`;
         }
-    }
-
-    async function updateStatus(orderId, newStatus) {
-        let justification = null;
-        if (newStatus === 'REAGENDADA') {
-            justification = prompt("Por favor, digite o motivo do reagendamento:");
-            if (!justification) {
-                alert("O reagendamento foi cancelado pois a justificativa é obrigatória.");
-                return;
-            }
-        }
-        try {
-            const response = await fetch(`${API_URL}/service-orders/${orderId}/status`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: newStatus, justification: justification })
-            });
-            if (response.ok) {
-                loadMyRoute();
-            } else {
-                alert('Falha ao atualizar o status.');
-            }
-        } catch (error) { alert('Erro de conexão ao atualizar status.'); }
     }
 
     async function transferOrder(orderId) {
