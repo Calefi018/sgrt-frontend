@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Rotas - SGRT</title>
-    <link rel="stylesheet" href="style.css?v=1.1"> <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <link rel="stylesheet" href="style.css?v=1.1">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 </head>
 <body>
 
@@ -66,8 +67,29 @@
 </div>
 
 <div id="edit-os-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeEditModal()">&times;</span>
+        <h2>Editar Ordem de Serviço</h2>
+        <form id="form-edit-os">
+            <input type="hidden" id="edit-os-id">
+            <label for="edit-clientId">ID Cliente:</label>
+            <input type="number" id="edit-clientId" required>
+            <label for="edit-clientName">Nome do Cliente:</label>
+            <input type="text" id="edit-clientName" required>
+            <label for="edit-address">Endereço (Bairro):</label>
+            <input type="text" id="edit-address" required>
+            <label for="edit-problem">Serviço/Problema:</label>
+            <input type="text" id="edit-problem" required>
+            <label for="edit-priority">Prioridade (Base):</label>
+            <select id="edit-priority"><option value="D1">D1</option><option value="D2">D2</option></select>
+            <label for="edit-period">Período:</label>
+            <select id="edit-period"><option value="MANHA">Manhã</option><option value="TARDE">Tarde</option></select>
+            <label for="edit-notes">Observações:</label>
+            <textarea id="edit-notes"></textarea>
+            <button type="submit">Salvar Alterações</button>
+        </form>
     </div>
-
+</div>
 
 <script>
     const API_URL = 'https://sgrt-api.onrender.com';
@@ -84,12 +106,31 @@
 
     // --- INICIALIZAÇÃO ---
     document.addEventListener('DOMContentLoaded', () => {
-        // ... (lógica de autenticação e tema) ...
+        const user = JSON.parse(localStorage.getItem('sgrt_user'));
+        if (!user || user.role !== 'ADMIN') {
+            alert('Acesso negado.');
+            window.location.href = '/index.html';
+            return;
+        }
+
+        if (localStorage.getItem('sgrt_theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            themeToggle.textContent = 'Modo Claro';
+        }
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const theme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+            themeToggle.textContent = theme === 'dark' ? 'Modo Claro' : 'Modo Escuro';
+            localStorage.setItem('sgrt_theme', theme);
+        });
+        
         deleteAllBtn.addEventListener('click', deleteAllOrders);
+
         loadTechnicians();
         loadAllOrders();
         setInterval(loadAllOrders, 30000);
     });
+
     // --- LÓGICA DE TÉCNICOS ---
     async function loadTechnicians() {
         try {
@@ -219,7 +260,6 @@
                 column.innerHTML = html;
                 routesContainer.appendChild(column);
             }
-
             document.querySelectorAll('.os-list').forEach(list => {
                 new Sortable(list, {
                     group: 'shared-os',
@@ -234,24 +274,23 @@
 
     function renderOsCard(order) {
         const durationText = order.executionDuration ? `${order.executionDuration} min` : 'N/A';
-        return `
-            <div class="os-card" data-id="${order.id}">
-                <div class="os-card-header">
-                    <p><strong>ID:</strong> ${order.clientId} - ${order.clientName}</p>
-                    <div>
-                        <button title="Editar OS" onclick="openEditModal('${order.id}')" class="card-btn-edit">✎</button>
-                        <button title="Transferir OS" onclick="transferOrder('${order.id}')" class="card-btn-transfer">⇆</button>
-                        <button title="Excluir OS" onclick="deleteOrder('${order.id}')" class="card-btn-delete">×</button>
+        return `<div class="os-card" data-id="${order.id}">
+                    <div class="os-card-header">
+                        <p><strong>ID:</strong> ${order.clientId} - ${order.clientName}</p>
+                        <div>
+                            <button title="Editar OS" onclick="openEditModal('${order.id}')" class="card-btn-edit">✎</button>
+                            <button title="Transferir OS" onclick="transferOrder('${order.id}')" class="card-btn-transfer">⇆</button>
+                            <button title="Excluir OS" onclick="deleteOrder('${order.id}')" class="card-btn-delete">×</button>
+                        </div>
                     </div>
-                </div>
-                <p><strong>Endereço:</strong> ${order.address}</p>
-                <p><strong>Problema:</strong> ${order.problemDescription}</p>
-                <p><strong>Prioridade:</strong> ${order.priority}</p>
-                <div class="os-card-footer">
-                    <span class="status-badge status-${order.status.toLowerCase()}">${order.status.replace('_', ' ')}</span>
-                    <p><strong>Execução:</strong> ${durationText}</p>
-                </div>
-            </div>`;
+                    <p><strong>Endereço:</strong> ${order.address}</p>
+                    <p><strong>Problema:</strong> ${order.problemDescription}</p>
+                    <p><strong>Prioridade:</strong> ${order.priority}</p>
+                    <div class="os-card-footer">
+                        <span class="status-badge status-${order.status.toLowerCase()}">${order.status.replace('_', ' ')}</span>
+                        <p><strong>Execução:</strong> ${durationText}</p>
+                    </div>
+                </div>`;
     }
     
     async function deleteOrder(id) {
@@ -307,7 +346,7 @@
             alert('Erro ao buscar técnicos.');
         }
     }
-
+    
     // --- LÓGICA DO IMPORTADOR INTELIGENTE ---
     function parseOsLine(line) {
         const idMatch = line.match(/^(\d+)\s*-/);
@@ -316,7 +355,6 @@
         }
         const clientId = idMatch[1];
         let remainingLine = line.substring(idMatch[0].length).trim();
-        
         let priority = 'D1';
         const priorityMatch = remainingLine.match(/(D\d|BASE\s*\d)\s*$/i);
         if (priorityMatch) {
@@ -324,7 +362,6 @@
             priority = pStr.includes("D1") || pStr.includes("BASE 1") ? "D1" : "D2";
             remainingLine = remainingLine.substring(0, remainingLine.lastIndexOf(priorityMatch[0])).trim();
         }
-        
         let notes = "Importado em massa.";
         const phoneRegex = /(\(\d{2}\)\s*9?\d{4,5}-?\d{4})/g;
         const phoneMatches = remainingLine.match(phoneRegex);
@@ -332,14 +369,11 @@
             notes += ` Tel: ${phoneMatches.join(', ')}`;
             remainingLine = remainingLine.replace(phoneRegex, '').trim();
         }
-        
         remainingLine = remainingLine.replace(/--/g, '-').replace(/\s*-\s*$/, '').trim();
         const parts = remainingLine.split(/\s*-\s*/).map(p => p.trim()).filter(p => p);
-        
         if (parts.length < 3) {
             return { success: false, reason: "Informações faltando (Nome, Bairro ou Serviço)" };
         }
-
         return {
             success: true,
             data: {
@@ -352,14 +386,12 @@
             }
         };
     }
-    
+
     importForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const text = document.getElementById('bulk-routes').value;
         const lines = text.split('\n');
-        if (lines.length === 0) {
-            return alert('Por favor, cole as rotas.');
-        }
+        if (lines.length === 0) return alert('Por favor, cole as rotas.');
         
         const technicians = await (await fetch(`${API_URL}/technicians`)).json();
         const technicianMap = new Map(technicians.map(t => [t.name.toUpperCase(), t.id]));
@@ -376,7 +408,6 @@
             if (!trimmedLine) continue;
 
             const upperLine = trimmedLine.toUpperCase();
-            
             if (technicianMap.has(upperLine)) {
                 currentTechnicianId = technicianMap.get(upperLine);
                 positionCounter = 0;
@@ -393,14 +424,8 @@
                         const osData = { ...result.data, period: currentPeriod, technicianId: currentTechnicianId, position: positionCounter++ };
                         try {
                             const response = await fetch(`${API_URL}/service-orders`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(osData) });
-                            if (response.ok) {
-                                successCount++;
-                            } else {
-                                failedLines.push(trimmedLine);
-                            }
-                        } catch (err) {
-                            failedLines.push(trimmedLine);
-                        }
+                            if (response.ok) successCount++; else failedLines.push(trimmedLine);
+                        } catch (err) { failedLines.push(trimmedLine); }
                     } else {
                         failedLines.push(`${trimmedLine} (Motivo: ${result.reason || 'Formato irreconhecível'})`);
                     }
@@ -414,12 +439,8 @@
         }
         
         let summary = `Importação finalizada!\n✔️ ${successCount} OS foram importadas com sucesso.`;
-        if (unfoundTechs.size > 0) {
-            summary += `\n\n⚠️ As seguintes linhas/nomes foram ignoradas (Técnicos não cadastrados ou texto desconhecido):\n- ${[...unfoundTechs].join('\n- ')}`;
-        }
-        if (failedLines.length > 0) {
-            summary += `\n\n❌ As seguintes linhas falharam no processamento:\n- ${failedLines.join('\n- ')}`;
-        }
+        if (unfoundTechs.size > 0) summary += `\n\n⚠️ As seguintes linhas/nomes foram ignoradas (Técnicos não cadastrados ou texto desconhecido):\n- ${[...unfoundTechs].join('\n- ')}`;
+        if (failedLines.length > 0) summary += `\n\n❌ As seguintes linhas falharam no processamento:\n- ${failedLines.join('\n- ')}`;
         alert(summary);
 
         loadAllOrders();
@@ -432,7 +453,6 @@
             const response = await fetch(`${API_URL}/service-orders/${orderId}`);
             if (!response.ok) return alert('Erro ao buscar dados da OS.');
             const order = await response.json();
-            
             document.getElementById('edit-os-id').value = order.id;
             document.getElementById('edit-clientId').value = order.clientId;
             document.getElementById('edit-clientName').value = order.clientName;
@@ -441,7 +461,6 @@
             document.getElementById('edit-priority').value = order.priority;
             document.getElementById('edit-period').value = order.period;
             document.getElementById('edit-notes').value = order.notes || '';
-            
             editModal.style.display = 'flex';
         } catch (error) {
             alert('Erro de conexão.');
@@ -481,56 +500,31 @@
             alert('Erro de conexão ao salvar as alterações.');
         }
     });
-    
+
     window.onclick = (event) => {
         if (event.target == editModal) {
             closeEditModal();
         }
     }
     
-    // --- NOVA LÓGICA DE EXCLUSÃO EM MASSA (MAIS ROBUSTA) ---
+    // --- LÓGICA DE EXCLUSÃO EM MASSA ---
     async function deleteAllOrders() {
         const confirmationText = "TEM CERTEZA?\n\nEsta ação é IRREVERSÍVEL e irá apagar TODAS as Ordens de Serviço.\n\nDigite 'EXCLUIR' para confirmar.";
         const userInput = prompt(confirmationText);
-
-        if (userInput !== 'EXCLUIR') {
-            alert('Ação cancelada.');
-            return;
-        }
-
-        document.body.style.cursor = 'wait';
-        deleteAllBtn.disabled = true;
-        deleteAllBtn.textContent = 'Excluindo...';
-
-        try {
-            // 1. Pega os IDs de todas as OS existentes
-            const response = await fetch(`${API_URL}/service-orders`);
-            const orders = await response.json();
-            const orderIds = orders.map(o => o.id);
-
-            if (orderIds.length === 0) {
-                alert("Nenhuma Ordem de Serviço para excluir.");
-                return;
-            }
-
-            // 2. Deleta uma por uma em um loop
-            let successCount = 0;
-            for (const id of orderIds) {
-                const deleteResponse = await fetch(`${API_URL}/service-orders/${id}`, { method: 'DELETE' });
-                if (deleteResponse.ok) {
-                    successCount++;
+        if (userInput === 'EXCLUIR') {
+            try {
+                const response = await fetch(`${API_URL}/service-orders/all`, { method: 'DELETE' });
+                if (response.ok) {
+                    alert('Todas as Ordens de Serviço foram excluídas com sucesso.');
+                    loadAllOrders();
+                } else {
+                    alert('Falha ao excluir as Ordens de Serviço.');
                 }
+            } catch (error) {
+                alert('Erro de conexão ao tentar excluir as OS.');
             }
-
-            alert(`${successCount} de ${orderIds.length} Ordens de Serviço foram excluídas com sucesso.`);
-            loadAllOrders(); // Atualiza o painel
-
-        } catch (error) {
-            alert('Erro de conexão ao tentar excluir as OS.');
-        } finally {
-            document.body.style.cursor = 'default';
-            deleteAllBtn.disabled = false;
-            deleteAllBtn.textContent = 'Excluir Todas as OS';
+        } else {
+            alert('Ação cancelada.');
         }
     }
 </script>
