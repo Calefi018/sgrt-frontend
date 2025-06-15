@@ -8,25 +8,38 @@
 </head>
 <body>
 
-<nav class="main-menu">
-    <ul>
-        <li><a href="/technician.html" class="logo">SGRT Técnico</a></li>
-        <li class="nav-links">
-            <a href="/admin.html" id="admin-link" style="display: none;">Painel Admin</a>
-            <button id="theme-toggle" class="nav-button">Modo Escuro</button>
-            <a href="/index.html">Sair</a>
-        </li>
-    </ul>
-</nav>
-
-<div class="main-container">
-    <h1 id="greeting"></h1>
-    <div class="panel full-width-panel">
-        <h2 style="border: none;">Minhas Ordens de Serviço</h2>
-        <div id="my-route-container">
-            <p>Carregando rota...</p>
+<div class="app-container">
+    <aside id="app-sidebar">
+        <div>
+            <div class="logo">SGRT</div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="/admin.html" id="admin-link">📝 <span>Gestão de Rotas</span></a></li>
+                    <li><a href="/monitoring.html" id="monitoring-link">📺 <span>Monitoramento</span></a></li>
+                    <li><a href="/technician.html" class="active">📍 <span>Minha Rota</span></a></li>
+                </ul>
+            </nav>
         </div>
-    </div>
+        <div class="sidebar-footer">
+            <a href="/index.html">Sair</a>
+        </div>
+    </aside>
+
+    <main class="app-content">
+        <header class="content-header">
+            <h1 id="greeting"></h1>
+            <div class="header-actions">
+                <button id="theme-toggle" class="nav-button">Modo Escuro</button>
+            </div>
+        </header>
+
+        <div class="panel full-width-panel">
+            <h2>Minhas Ordens de Serviço</h2>
+            <div id="my-route-container">
+                <p>Carregando rota...</p>
+            </div>
+        </div>
+    </main>
 </div>
 
 <script>
@@ -36,14 +49,16 @@
 
     // --- INICIALIZAÇÃO E AUTENTICAÇÃO ---
     document.addEventListener('DOMContentLoaded', () => {
-        // 1. VERIFICA SE O USUÁRIO É UM TÉCNICO LOGADO
         if (!user || user.role !== 'TECHNICIAN') {
             alert('Acesso negado. Por favor, faça o login como técnico.');
             window.location.href = '/index.html';
             return;
         }
 
-        // 2. CONFIGURA O TEMA (CLARO/ESCURO)
+        // Esconde os links de admin no menu
+        document.getElementById('admin-link').style.display = 'none';
+        document.getElementById('monitoring-link').style.display = 'none';
+
         const themeToggle = document.getElementById('theme-toggle');
         if (localStorage.getItem('sgrt_theme') === 'dark') {
             document.body.classList.add('dark-mode');
@@ -56,23 +71,19 @@
             localStorage.setItem('sgrt_theme', theme);
         });
 
-        // 3. ESCONDE O LINK DE ADMIN
-        document.getElementById('admin-link').style.display = 'none';
-
-        // 4. SAUDAÇÃO PERSONALIZADA
         const hour = new Date().getHours();
-        let greetingText = (hour < 12) ? 'Bom dia' : (hour < 18) ? 'Boa tarde' : 'Boa noite';
+        let greetingText = (hour < 5 || hour >= 18) ? 'Boa noite' : (hour < 12) ? 'Bom dia' : 'Boa tarde';
         document.getElementById('greeting').textContent = `${greetingText}, ${user.name}!`;
         
-        // 5. CARREGA A ROTA DO TÉCNICO
         loadMyRoute();
+        setInterval(loadMyRoute, 30000); // Atualiza a rota a cada 30 segundos
     });
+
 
     // --- FUNÇÕES DA PÁGINA ---
     function renderOsCard(order) {
         const textToCopy = `${order.clientId} - ${order.clientName}`;
-        const durationText = order.executionDuration ? `${order.executionDuration} min` : 'N/A';
-
+        // Ocultamos a informação de tempo de execução para o técnico
         return `
             <div class="os-card">
                 <div class="os-card-header">
@@ -87,8 +98,7 @@
                 <p><strong>Prioridade (Base):</strong> ${order.priority}</p>
                 <p><strong>Observações:</strong> ${order.notes || 'Nenhuma'}</p>
                 <div class="os-card-footer">
-                    <p><strong>Status:</strong> <span class="status-${order.status.toLowerCase()}">${order.status.replace('_', ' ')}</span></p>
-                    <p><strong>Tempo de Execução:</strong> ${durationText}</p>
+                    <span class="status-badge status-${order.status.toLowerCase()}">${order.status.replace('_', ' ')}</span>
                 </div>
                 <div class="actions">
                     <button onclick="updateStatus('${order.id}', 'A_CAMINHO')">A Caminho</button>
@@ -101,11 +111,18 @@
     }
     
     async function loadMyRoute() {
-        routeContainer.innerHTML = '<p>Buscando sua rota...</p>';
         try {
             const response = await fetch(`${API_URL}/my-route?technicianId=${user.id}`);
             if (!response.ok) throw new Error(`Erro da API`);
+            
             const orders = await response.json();
+            const currentRenderedIds = Array.from(routeContainer.querySelectorAll('.os-card')).map(c => c.dataset.id);
+            const newOrderIds = orders.map(o => o.id);
+
+            // Otimização: Só redesenha a tela se houver alguma mudança
+            if (JSON.stringify(currentRenderedIds) === JSON.stringify(newOrderIds) && routeContainer.innerHTML !== '') {
+                return;
+            }
 
             if (orders.length === 0) {
                 routeContainer.innerHTML = '<h2>Nenhuma Ordem de Serviço atribuída para hoje.</h2>';
@@ -122,7 +139,7 @@
                     groupTitle.textContent = title;
                     routeContainer.appendChild(groupTitle);
                     orderList.forEach(order => {
-                        routeContainer.innerHTML += renderOsCard(order);
+                        routeContainer.insertAdjacentHTML('beforeend', renderOsCard(order));
                     });
                 }
             };
@@ -130,7 +147,7 @@
             renderOrderGroup('🌙 TARDE', tardeOrders);
 
         } catch (error) {
-            routeContainer.innerHTML = `<h2>Não foi possível carregar sua rota. Tente recarregar a página.</h2>`;
+            routeContainer.innerHTML = `<h2>Não foi possível carregar sua rota. Verifique sua conexão.</h2>`;
         }
     }
 
@@ -172,17 +189,11 @@
             if (otherTechnicians[choiceIndex]) {
                 const newTechnicianId = otherTechnicians[choiceIndex].id;
                 if(confirm(`Tem certeza que deseja transferir esta OS para ${otherTechnicians[choiceIndex].name}?`)){
-                    const transferResponse = await fetch(`${API_URL}/service-orders/${orderId}/transfer`, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ newTechnicianId })
+                    await fetch(`${API_URL}/service-orders/${orderId}/transfer`, {
+                        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ newTechnicianId })
                     });
-                    if (transferResponse.ok) {
-                        alert('OS transferida com sucesso!');
-                        loadMyRoute();
-                    } else {
-                        alert('Falha ao transferir OS.');
-                    }
+                    alert('OS transferida com sucesso! Ela não aparecerá mais na sua rota.');
+                    loadMyRoute();
                 }
             } else {
                 alert("Seleção inválida.");
