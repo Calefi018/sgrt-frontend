@@ -108,14 +108,10 @@
     document.addEventListener('DOMContentLoaded', () => {
         const user = JSON.parse(localStorage.getItem('sgrt_user'));
         if (!user || user.role !== 'ADMIN') {
-            alert('Acesso negado.');
-            window.location.href = '/index.html';
-            return;
+            alert('Acesso negado.'); window.location.href = '/index.html'; return;
         }
-
         if (localStorage.getItem('sgrt_theme') === 'dark') {
-            document.body.classList.add('dark-mode');
-            themeToggle.textContent = 'Modo Claro';
+            document.body.classList.add('dark-mode'); themeToggle.textContent = 'Modo Claro';
         }
         themeToggle.addEventListener('click', () => {
             document.body.classList.toggle('dark-mode');
@@ -123,9 +119,7 @@
             themeToggle.textContent = theme === 'dark' ? 'Modo Claro' : 'Modo Escuro';
             localStorage.setItem('sgrt_theme', theme);
         });
-        
         deleteAllBtn.addEventListener('click', deleteAllOrders);
-
         loadTechnicians();
         loadAllOrders();
         setInterval(loadAllOrders, 30000);
@@ -150,75 +144,31 @@
             techList.innerHTML = `<li>Erro ao carregar técnicos.</li>`;
         }
     }
-    
     techForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const data = {
-            name: document.getElementById('tech-name').value,
-            email: document.getElementById('tech-email').value,
-            password: document.getElementById('tech-password').value
-        };
+        const data = { name: document.getElementById('tech-name').value, email: document.getElementById('tech-email').value, password: document.getElementById('tech-password').value };
         try {
-            const response = await fetch(`${API_URL}/technicians`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            if (response.ok) {
-                alert('Técnico adicionado com sucesso!');
-                techForm.reset();
-                loadTechnicians();
-            } else {
-                alert('Falha ao adicionar técnico. O email já pode existir.');
-            }
-        } catch (err) {
-            alert('Erro de conexão ao criar técnico.');
-        }
+            const response = await fetch(`${API_URL}/technicians`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            if (response.ok) { alert('Técnico adicionado!'); techForm.reset(); loadTechnicians(); } else { alert('Falha. Email já existe?'); }
+        } catch (err) { alert('Erro de conexão.'); }
     });
-
     async function deleteTechnician(id) {
-        if (!confirm('Tem certeza que quer excluir este técnico? Todas as OS dele também serão removidas.')) return;
+        if (!confirm('Tem certeza?')) return;
         try {
             const response = await fetch(`${API_URL}/technicians/${id}`, { method: 'DELETE' });
-            if (response.ok) {
-                alert('Técnico excluído com sucesso!');
-                loadTechnicians();
-                loadAllOrders();
-            } else {
-                alert('Falha ao excluir o técnico.');
-            }
-        } catch (err) {
-            alert('Erro de conexão ao excluir técnico.');
-        }
+            if (response.ok) { alert('Excluído!'); loadTechnicians(); loadAllOrders(); } else { alert('Falha.'); }
+        } catch (err) { alert('Erro.'); }
     }
-
     function editTechnician(id, name, email) {
-        const newName = prompt("Digite o novo nome:", name);
-        if (newName === null) return;
-        const newEmail = prompt("Digite o novo email:", email);
-        if (newEmail === null) return;
-        if (newName && newEmail) {
-            updateTechnician(id, newName, newEmail);
-        }
+        const newName = prompt("Novo nome:", name); if (newName === null) return;
+        const newEmail = prompt("Novo email:", email); if (newEmail === null) return;
+        if (newName && newEmail) updateTechnician(id, newName, newEmail);
     }
-
     async function updateTechnician(id, name, email) {
         try {
-            const response = await fetch(`${API_URL}/technicians/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email })
-            });
-            if (response.ok) {
-                alert('Técnico atualizado com sucesso!');
-                loadTechnicians();
-                loadAllOrders();
-            } else {
-                alert('Falha ao atualizar o técnico.');
-            }
-        } catch (err) {
-            alert('Erro de conexão ao atualizar o técnico.');
-        }
+            const response = await fetch(`${API_URL}/technicians/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email }) });
+            if (response.ok) { alert('Atualizado!'); loadTechnicians(); loadAllOrders(); } else { alert('Falha.'); }
+        } catch (err) { alert('Erro.'); }
     }
 
     // --- LÓGICA DE ORDENS DE SERVIÇO ---
@@ -226,20 +176,9 @@
         try {
             const response = await fetch(`${API_URL}/service-orders`);
             const orders = await response.json();
-            const routesByTechnician = orders.reduce((acc, order) => {
-                const tech = order.technician;
-                if (!tech) return acc;
-                if (!acc[tech.id]) {
-                    acc[tech.id] = { name: tech.name, orders: [] };
-                }
-                acc[tech.id].orders.push(order);
-                return acc;
-            }, {});
-            
+            const routesByTechnician = orders.reduce((acc, order) => { const t = order.technician; if(!t) return acc; if(!acc[t.id]) acc[t.id]={name:t.name, orders:[]}; acc[t.id].orders.push(order); return acc; }, {});
             routesContainer.innerHTML = '';
-            if (Object.keys(routesByTechnician).length === 0) {
-                routesContainer.innerHTML = '<p>Nenhuma rota para exibir.</p>';
-            }
+            if (Object.keys(routesByTechnician).length === 0) routesContainer.innerHTML = '<p>Nenhuma rota para exibir.</p>';
             for (const techId in routesByTechnician) {
                 const techData = routesByTechnician[techId];
                 const column = document.createElement('div');
@@ -256,16 +195,8 @@
                 column.innerHTML = html;
                 routesContainer.appendChild(column);
             }
-            document.querySelectorAll('.os-list').forEach(list => {
-                new Sortable(list, {
-                    group: 'shared-os',
-                    animation: 150,
-                    onEnd: saveNewOrder
-                });
-            });
-        } catch (error) {
-            routesContainer.innerHTML = `<p>Erro ao carregar rotas.</p>`;
-        }
+            document.querySelectorAll('.os-list').forEach(list => { new Sortable(list, { group: 'shared-os', animation: 150, onEnd: saveNewOrder }); });
+        } catch (error) { routesContainer.innerHTML = `<p>Erro ao carregar rotas.</p>`; }
     }
 
     function renderOsCard(order) {
@@ -288,67 +219,15 @@
                     </div>
                 </div>`;
     }
+    
+    async function deleteOrder(id) { if (!confirm('Excluir esta OS?')) return; try {const r = await fetch(`${API_URL}/service-orders/${id}`, { method: 'DELETE' }); if (r.ok) loadAllOrders(); else alert('Falha.');}catch(e){alert('Erro.');}}
+    async function saveNewOrder(evt) { const allCards = Array.from(document.querySelectorAll('.os-card')); const orderedIds = allCards.map(card => card.dataset.id); try { await fetch(`${API_URL}/service-orders/reorder`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderedIds }) }); } catch (e) { alert('Erro ao salvar nova ordem.'); } }
+    async function transferOrder(id) { try { const r = await fetch(`${API_URL}/technicians`); const t = await r.json(); let opts = t.map((tech, i) => `${i + 1} - ${tech.name}`).join('\n'); const c = prompt(`Transferir para:\n${opts}`); if (!c) return; const i = parseInt(c) - 1; if (t[i]) { const nTID = t[i].id; if (confirm(`Transferir para ${t[i].name}?`)) { await fetch(`${API_URL}/service-orders/${id}/transfer`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ newTechnicianId: nTID }) }); loadAllOrders(); } } else { alert("Seleção inválida."); } } catch (e) { alert('Erro.'); } }
 
-    async function deleteOrder(id) {
-        if (!confirm('Excluir esta OS?')) return;
-        try {
-            const response = await fetch(`${API_URL}/service-orders/${id}`, { method: 'DELETE' });
-            if (response.ok) {
-                loadAllOrders();
-            } else {
-                alert('Falha ao excluir OS.');
-            }
-        } catch (e) {
-            alert('Erro de conexão.');
-        }
-    }
-
-    async function saveNewOrder(evt) {
-        const allCards = Array.from(document.querySelectorAll('.os-card'));
-        const orderedIds = allCards.map(card => card.dataset.id);
-        try {
-            await fetch(`${API_URL}/service-orders/reorder`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderedIds })
-            });
-        } catch (e) {
-            alert('Erro ao salvar nova ordem.');
-        }
-    }
-
-    async function transferOrder(id) {
-        try {
-            const techResponse = await fetch(`${API_URL}/technicians`);
-            const technicians = await techResponse.json();
-            let options = technicians.map((tech, i) => `${i + 1} - ${tech.name}`).join('\n');
-            const choice = prompt(`Transferir para:\n${options}`);
-            if (!choice) return;
-            const index = parseInt(choice) - 1;
-            if (technicians[index]) {
-                const newTechnicianId = technicians[index].id;
-                if (confirm(`Tem certeza que quer transferir para ${technicians[index].name}?`)) {
-                    await fetch(`${API_URL}/service-orders/${id}/transfer`, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ newTechnicianId })
-                    });
-                    loadAllOrders();
-                }
-            } else {
-                alert("Seleção inválida.");
-            }
-        } catch (e) {
-            alert('Erro ao buscar técnicos.');
-        }
-    }
-
-    // --- LÓGICA DO IMPORTADOR INTELIGENTE v2.1 ---
+    // --- LÓGICA DO IMPORTADOR INTELIGENTE (v2.2 - CORREÇÃO FINAL) ---
     function parseOsLine(line) {
         const idMatch = line.match(/^(\d+)\s*-/);
-        if (!idMatch) {
-            return { success: false, reason: "Não inicia com 'ID - '" };
-        }
+        if (!idMatch) return { success: false, reason: "Não inicia com 'ID - '" };
         const clientId = idMatch[1];
         let remainingLine = line.substring(idMatch[0].length).trim();
         let priority = 'D1';
@@ -367,22 +246,10 @@
         }
         remainingLine = remainingLine.replace(/--/g, '-').replace(/\s*-\s*$/, '').trim();
         const parts = remainingLine.split(/\s*-\s*/).map(p => p.trim()).filter(p => p);
-        if (parts.length < 3) {
-            return { success: false, reason: "Informações faltando (Nome, Bairro ou Serviço)" };
-        }
-        return {
-            success: true,
-            data: {
-                clientId: parseInt(clientId),
-                priority,
-                notes,
-                clientName: parts[0],
-                problemDescription: parts[parts.length - 1],
-                address: parts.slice(1, -1).join(' - ')
-            }
-        };
+        if (parts.length < 3) return { success: false, reason: "Informações faltando (Nome, Bairro ou Serviço)" };
+        return { success: true, data: { clientId: parseInt(clientId), priority, notes, clientName: parts[0], problemDescription: parts[parts.length - 1], address: parts.slice(1, -1).join(' - ') } };
     }
-
+    
     importForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const text = document.getElementById('bulk-routes').value;
@@ -390,9 +257,9 @@
         if (lines.length === 0) return alert('Por favor, cole as rotas.');
         
         const technicians = await (await fetch(`${API_URL}/technicians`)).json();
-        const technicianNames = technicians.map(t => t.name.toUpperCase());
+        const technicianMap = new Map(technicians.map(t => [t.name.toUpperCase(), t.id]));
         
-        let currentTechnician = null;
+        let currentTechnicianId = null;
         let currentPeriod = "MANHA";
         let unfoundTechs = new Set();
         let failedLines = [];
@@ -403,54 +270,44 @@
             const trimmedLine = line.trim();
             if (!trimmedLine) continue;
 
-            const isTechnicianName = technicianNames.find(name => trimmedLine.toUpperCase() === name);
-            if (isTechnicianName) {
-                currentTechnician = technicians.find(t => t.name.toUpperCase() === isTechnicianName);
-                positionCounter = 0;
-                continue;
-            }
-            if (trimmedLine.toUpperCase().includes('MANHÃ')) {
-                currentPeriod = "MANHA";
-                continue;
-            }
-            if (trimmedLine.toUpperCase().includes('TARDE')) {
-                currentPeriod = "TARDE";
-                continue;
-            }
+            const upperLine = trimmedLine.toUpperCase();
             
+            // Lógica para identificar se a linha é um nome de técnico
+            if (technicianMap.has(upperLine)) {
+                currentTechnicianId = technicianMap.get(upperLine);
+                positionCounter = 0; // Reseta a posição para cada novo técnico
+                console.log(`Técnico definido como: ${trimmedLine}`);
+                continue;
+            }
+
+            if (upperLine.includes('MANHÃ')) { currentPeriod = "MANHA"; continue; }
+            if (upperLine.includes('TARDE')) { currentPeriod = "TARDE"; continue; }
+            
+            // Se a linha começa com um número, é uma OS.
             if (/^\d/.test(trimmedLine)) {
-                if (!currentTechnician) {
-                    failedLines.push(`${trimmedLine} (Motivo: Nenhuma equipe de técnico válida definida acima)`);
-                    continue;
-                }
-                const result = parseOsLine(trimmedLine);
-                if (result.success) {
-                    const osData = { ...result.data, period: currentPeriod, technicianId: currentTechnician.id, position: positionCounter++ };
-                    try {
-                        const response = await fetch(`${API_URL}/service-orders`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(osData) });
-                        if (response.ok) {
-                            successCount++;
-                        } else {
-                            failedLines.push(trimmedLine);
-                        }
-                    } catch (err) {
-                        failedLines.push(trimmedLine);
+                if (currentTechnicianId) {
+                    const result = parseOsLine(trimmedLine);
+                    if (result.success) {
+                        const osData = { ...result.data, period: currentPeriod, technicianId: currentTechnicianId, position: positionCounter++ };
+                        try {
+                            const response = await fetch(`${API_URL}/service-orders`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(osData) });
+                            if (response.ok) successCount++; else failedLines.push(trimmedLine);
+                        } catch (err) { failedLines.push(trimmedLine); }
+                    } else {
+                        failedLines.push(`${trimmedLine} (Motivo: ${result.reason || 'Formato irreconhecível'})`);
                     }
-                } else if (trimmedLine.length > 5) {
-                    failedLines.push(`${trimmedLine} (Motivo: ${result.reason || 'Formato irreconhecível'})`);
+                } else {
+                    failedLines.push(`${trimmedLine} (Motivo: Nenhuma equipe de técnico válida definida acima)`);
                 }
-            } else {
+            } else { // Se não for OS, nem período, nem técnico conhecido, é um nome não cadastrado
                 unfoundTechs.add(trimmedLine);
+                currentTechnicianId = null; // CORREÇÃO CRÍTICA: Reseta o técnico
             }
         }
         
         let summary = `Importação finalizada!\n✔️ ${successCount} OS foram importadas com sucesso.`;
-        if (unfoundTechs.size > 0) {
-            summary += `\n\n⚠️ As seguintes linhas/nomes foram ignorados (Técnicos não cadastrados ou texto desconhecido):\n- ${[...unfoundTechs].join('\n- ')}`;
-        }
-        if (failedLines.length > 0) {
-            summary += `\n\n❌ As seguintes linhas falharam no processamento:\n- ${failedLines.join('\n- ')}`;
-        }
+        if (unfoundTechs.size > 0) summary += `\n\n⚠️ As rotas para os seguintes nomes foram ignoradas (Técnicos não cadastrados ou texto desconhecido):\n- ${[...unfoundTechs].join('\n- ')}`;
+        if (failedLines.length > 0) summary += `\n\n❌ As seguintes linhas falharam no processamento:\n- ${failedLines.join('\n- ')}`;
         alert(summary);
 
         loadAllOrders();
@@ -458,85 +315,13 @@
     });
 
     // --- LÓGICA DO MODAL DE EDIÇÃO ---
-    async function openEditModal(orderId) {
-        try {
-            const response = await fetch(`${API_URL}/service-orders/${orderId}`);
-            if (!response.ok) return alert('Erro ao buscar dados da OS.');
-            const order = await response.json();
-            document.getElementById('edit-os-id').value = order.id;
-            document.getElementById('edit-clientId').value = order.clientId;
-            document.getElementById('edit-clientName').value = order.clientName;
-            document.getElementById('edit-address').value = order.address;
-            document.getElementById('edit-problem').value = order.problemDescription;
-            document.getElementById('edit-priority').value = order.priority;
-            document.getElementById('edit-period').value = order.period;
-            document.getElementById('edit-notes').value = order.notes || '';
-            editModal.style.display = 'flex';
-        } catch (error) {
-            alert('Erro de conexão.');
-        }
-    }
-
-    function closeEditModal() {
-        editModal.style.display = 'none';
-    }
-
-    editForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const orderId = document.getElementById('edit-os-id').value;
-        const updatedData = {
-            clientId: document.getElementById('edit-clientId').value,
-            clientName: document.getElementById('edit-clientName').value,
-            address: document.getElementById('edit-address').value,
-            problemDescription: document.getElementById('edit-problem').value,
-            priority: document.getElementById('edit-priority').value,
-            period: document.getElementById('edit-period').value,
-            notes: document.getElementById('edit-notes').value
-        };
-        try {
-            const response = await fetch(`${API_URL}/service-orders/${orderId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updatedData)
-            });
-            if (response.ok) {
-                alert('OS atualizada com sucesso!');
-                closeEditModal();
-                loadAllOrders();
-            } else {
-                alert('Falha ao atualizar a OS.');
-            }
-        } catch (error) {
-            alert('Erro de conexão ao salvar as alterações.');
-        }
-    });
-
-    window.onclick = (event) => {
-        if (event.target == editModal) {
-            closeEditModal();
-        }
-    }
+    async function openEditModal(orderId) { try { const r=await fetch(`${API_URL}/service-orders/${orderId}`); if(!r.ok)return alert('Erro.'); const o=await r.json(); document.getElementById('edit-os-id').value=o.id; document.getElementById('edit-clientId').value=o.clientId; document.getElementById('edit-clientName').value=o.clientName; document.getElementById('edit-address').value=o.address; document.getElementById('edit-problem').value=o.problemDescription; document.getElementById('edit-priority').value=o.priority; document.getElementById('edit-period').value=o.period; document.getElementById('edit-notes').value=o.notes||''; editModal.style.display='flex';}catch(e){alert('Erro.');}}
+    function closeEditModal() { editModal.style.display='none'; }
+    editForm.addEventListener('submit', async (e)=>{ e.preventDefault(); const id=document.getElementById('edit-os-id').value; const d={clientId:document.getElementById('edit-clientId').value,clientName:document.getElementById('edit-clientName').value,address:document.getElementById('edit-address').value,problemDescription:document.getElementById('edit-problem').value,priority:document.getElementById('edit-priority').value,period:document.getElementById('edit-period').value,notes:document.getElementById('edit-notes').value}; try{const r=await fetch(`${API_URL}/service-orders/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}); if(r.ok){alert('OS atualizada!');closeEditModal();loadAllOrders();}else{alert('Falha.');}}catch(e){alert('Erro.');}});
+    window.onclick = (event) => { if (event.target == editModal) closeEditModal(); }
     
     // --- LÓGICA DE EXCLUSÃO EM MASSA ---
-    async function deleteAllOrders() {
-        const confirmationText = "TEM CERTEZA?\n\nEsta ação é IRREVERSÍVEL e irá apagar TODAS as Ordens de Serviço de TODOS os técnicos.\n\nDigite 'EXCLUIR' para confirmar.";
-        const userInput = prompt(confirmationText);
-        if (userInput === 'EXCLUIR') {
-            try {
-                const response = await fetch(`${API_URL}/service-orders/all`, { method: 'DELETE' });
-                if (response.ok) {
-                    alert('Todas as Ordens de Serviço foram excluídas com sucesso.');
-                    loadAllOrders();
-                } else {
-                    alert('Falha ao excluir as Ordens de Serviço.');
-                }
-            } catch (error) {
-                alert('Erro de conexão ao tentar excluir as OS.');
-            }
-        } else {
-            alert('Ação cancelada.');
-        }
-    }
+    async function deleteAllOrders() { const conf=prompt("TEM CERTEZA? Ação IRREVERSÍVEL.\nDigite 'EXCLUIR' para apagar TODAS as OS."); if(conf==='EXCLUIR'){try{const r=await fetch(`${API_URL}/service-orders/all`,{method:'DELETE'}); if(r.ok){alert('OS excluídas.');loadAllOrders();}else{alert('Falha.');}}catch(e){alert('Erro.');}}else{alert('Cancelado.');}}
 </script>
 
 </body>
