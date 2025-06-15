@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monitoramento - SGRT</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=1.1"> 
 </head>
 <body>
 
@@ -66,7 +66,7 @@
         }
 
         updateDashboard();
-        setInterval(updateDashboard, 20000); // Atualiza a cada 20 segundos
+        setInterval(updateDashboard, 20000);
     });
 
     // --- FUNÇÃO PRINCIPAL DO DASHBOARD ---
@@ -144,11 +144,11 @@
             if (statusInfo.os.status === 'A_CAMINHO' && statusInfo.os.startTravelLatitude) {
                 const lat = statusInfo.os.startTravelLatitude;
                 const lon = statusInfo.os.startTravelLongitude;
-                locationHtml = `<a href="https://maps.google.com/?q=${lat},${lon}" target="_blank" class="map-link">📍 Ver Ponto de Partida</a>`;
+                locationHtml = `<a href="https://maps.google.com/maps?q=${lat},${lon}" target="_blank" class="map-link">📍 Ver Ponto de Partida</a>`;
             } else if (statusInfo.os.status === 'EXECUTANDO' && statusInfo.os.executionLatitude) {
                 const lat = statusInfo.os.executionLatitude;
                 const lon = statusInfo.os.executionLongitude;
-                locationHtml = `<a href="https://maps.google.com/?q=${lat},${lon}" target="_blank" class="map-link">🛠️ Ver Local de Execução</a>`;
+                locationHtml = `<a href="https://maps.google.com/maps?q=${lat},${lon}" target="_blank" class="map-link">🛠️ Ver Local de Execução</a>`;
             }
         }
 
