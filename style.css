@@ -82,7 +82,7 @@ button.btn-delete-all:hover {
 
 /* --- Cards de OS e Listas --- */
 #technician-list li { background-color: var(--bg-color); padding: 10px 15px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-.os-card { background-color: var(--card-bg-color); border: 1px solid var(--border-color); padding: 15px; margin-bottom: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); position: relative; }
+.os-card { background-color: var(--card-bg-color, var(--bg-color)); border: 1px solid var(--border-color); padding: 15px; margin-bottom: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); position: relative; }
 .os-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .os-card-header p { font-weight: bold; margin: 0; font-size: 1.1em; color: var(--text-color); }
 .os-card p { margin: 5px 0; color: var(--text-muted-color); }
