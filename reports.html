@@ -81,22 +81,17 @@
         const themeToggle = document.getElementById('theme-toggle');
         if (localStorage.getItem('sgrt_theme') === 'dark') {
             document.body.classList.add('dark-mode');
-            themeToggle.textContent = 'Modo Claro';
+            if(themeToggle) themeToggle.textContent = 'Modo Claro';
         }
-        themeToggle.addEventListener('click', () => {
-            document.body.classList.toggle('dark-mode');
-            const theme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
-            themeToggle.textContent = theme === 'dark' ? 'Modo Claro' : 'Modo Escuro';
-            localStorage.setItem('sgrt_theme', theme);
-        });
-
-        // Adiciona um link para esta página no menu do admin
-        const adminLink = document.querySelector('#app-sidebar a[href="/admin.html"]');
-        const li = document.createElement('li');
-        li.innerHTML = '<a href="/reports.html">📊 <span>Relatórios</span></a>';
-        if (adminLink) adminLink.parentElement.parentElement.appendChild(li);
-
-
+        if(themeToggle) {
+            themeToggle.addEventListener('click', () => {
+                document.body.classList.toggle('dark-mode');
+                const theme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+                themeToggle.textContent = theme === 'dark' ? 'Modo Claro' : 'Modo Escuro';
+                localStorage.setItem('sgrt_theme', theme);
+            });
+        }
+        
         populateTechnicianFilter();
         setDefaultDates();
     });
@@ -144,8 +139,15 @@
     function setDefaultDates() {
         const today = new Date();
         const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        document.getElementById('end-date').value = today.toISOString().split('T')[0];
-        document.getElementById('start-date').value = firstDayOfMonth.toISOString().split('T')[0];
+        
+        // Formata as datas para YYYY-MM-DD
+        const toISODateString = (date) => {
+            const pad = (num) => num < 10 ? '0' + num : num;
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+        }
+
+        document.getElementById('end-date').value = toISODateString(today);
+        document.getElementById('start-date').value = toISODateString(firstDayOfMonth);
     }
 
     function formatDateTime(isoString) {
@@ -167,7 +169,7 @@
             <table class="report-table">
                 <thead>
                     <tr>
-                        <th>Data</th>
+                        <th>Criação</th>
                         <th>ID Cliente</th>
                         <th>Cliente</th>
                         <th>Técnico</th>
