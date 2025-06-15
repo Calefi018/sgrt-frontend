@@ -150,7 +150,7 @@
             techList.innerHTML = `<li>Erro ao carregar técnicos.</li>`;
         }
     }
-
+    
     techForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const data = {
@@ -245,8 +245,8 @@
                 const column = document.createElement('div');
                 column.className = 'technician-column';
                 let html = `<h3>${techData.name}</h3>`;
-                const manha = techData.orders.filter(o => o.period === 'MANHA').sort((a, b) => a.position - b.position);
-                const tarde = techData.orders.filter(o => o.period === 'TARDE').sort((a, b) => a.position - b.position);
+                const manha = techData.orders.filter(o => o.period === 'MANHA').sort((a,b) => a.position - b.position);
+                const tarde = techData.orders.filter(o => o.period === 'TARDE').sort((a,b) => a.position - b.position);
                 html += `<div class="period-group"><h4>☀️ MANHÃ</h4><div class="os-list" id="list-manha-${techId}">`;
                 if (manha.length > 0) manha.forEach(order => { html += renderOsCard(order); });
                 html += `</div></div>`;
@@ -270,24 +270,23 @@
 
     function renderOsCard(order) {
         const durationText = order.executionDuration ? `${order.executionDuration} min` : 'N/A';
-        return `
-            <div class="os-card" data-id="${order.id}">
-                <div class="os-card-header">
-                    <p><strong>ID:</strong> ${order.clientId} - ${order.clientName}</p>
-                    <div>
-                        <button title="Editar OS" onclick="openEditModal('${order.id}')" class="card-btn-edit">✎</button>
-                        <button title="Transferir OS" onclick="transferOrder('${order.id}')" class="card-btn-transfer">⇆</button>
-                        <button title="Excluir OS" onclick="deleteOrder('${order.id}')" class="card-btn-delete">×</button>
+        return `<div class="os-card" data-id="${order.id}">
+                    <div class="os-card-header">
+                        <p><strong>ID:</strong> ${order.clientId} - ${order.clientName}</p>
+                        <div>
+                            <button title="Editar OS" onclick="openEditModal('${order.id}')" class="card-btn-edit">✎</button>
+                            <button title="Transferir OS" onclick="transferOrder('${order.id}')" class="card-btn-transfer">⇆</button>
+                            <button title="Excluir OS" onclick="deleteOrder('${order.id}')" class="card-btn-delete">×</button>
+                        </div>
                     </div>
-                </div>
-                <p><strong>Endereço:</strong> ${order.address}</p>
-                <p><strong>Problema:</strong> ${order.problemDescription}</p>
-                <p><strong>Prioridade:</strong> ${order.priority}</p>
-                <div class="os-card-footer">
-                    <span class="status-badge status-${order.status.toLowerCase()}">${order.status.replace('_', ' ')}</span>
-                    <p><strong>Execução:</strong> ${durationText}</p>
-                </div>
-            </div>`;
+                    <p><strong>Endereço:</strong> ${order.address}</p>
+                    <p><strong>Problema:</strong> ${order.problemDescription}</p>
+                    <p><strong>Prioridade:</strong> ${order.priority}</p>
+                    <div class="os-card-footer">
+                        <span class="status-badge status-${order.status.toLowerCase()}">${order.status.replace('_', ' ')}</span>
+                        <p><strong>Execução:</strong> ${durationText}</p>
+                    </div>
+                </div>`;
     }
 
     async function deleteOrder(id) {
@@ -344,10 +343,12 @@
         }
     }
 
-    // --- LÓGICA DO IMPORTADOR INTELIGENTE ---
+    // --- LÓGICA DO IMPORTADOR INTELIGENTE v2.1 ---
     function parseOsLine(line) {
         const idMatch = line.match(/^(\d+)\s*-/);
-        if (!idMatch) return { success: false, reason: "Não inicia com 'ID - '" };
+        if (!idMatch) {
+            return { success: false, reason: "Não inicia com 'ID - '" };
+        }
         const clientId = idMatch[1];
         let remainingLine = line.substring(idMatch[0].length).trim();
         let priority = 'D1';
@@ -366,15 +367,27 @@
         }
         remainingLine = remainingLine.replace(/--/g, '-').replace(/\s*-\s*$/, '').trim();
         const parts = remainingLine.split(/\s*-\s*/).map(p => p.trim()).filter(p => p);
-        if (parts.length < 3) return { success: false, reason: "Informações faltando (Nome, Bairro ou Serviço)" };
-        return { success: true, data: { clientId: parseInt(clientId), priority, notes, clientName: parts[0], problemDescription: parts[parts.length - 1], address: parts.slice(1, -1).join(' - ') } };
+        if (parts.length < 3) {
+            return { success: false, reason: "Informações faltando (Nome, Bairro ou Serviço)" };
+        }
+        return {
+            success: true,
+            data: {
+                clientId: parseInt(clientId),
+                priority,
+                notes,
+                clientName: parts[0],
+                problemDescription: parts[parts.length - 1],
+                address: parts.slice(1, -1).join(' - ')
+            }
+        };
     }
-    
+
     importForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const text = document.getElementById('bulk-routes').value;
         const lines = text.split('\n');
-        if (lines.length === 0) return alert('Cole as rotas.');
+        if (lines.length === 0) return alert('Por favor, cole as rotas.');
         
         const technicians = await (await fetch(`${API_URL}/technicians`)).json();
         const technicianNames = technicians.map(t => t.name.toUpperCase());
@@ -390,36 +403,54 @@
             const trimmedLine = line.trim();
             if (!trimmedLine) continue;
 
-            const foundTechName = technicianNames.find(name => trimmedLine.toUpperCase() === name);
-            if (foundTechName) {
-                currentTechnician = technicians.find(t => t.name.toUpperCase() === foundTechName);
+            const isTechnicianName = technicianNames.find(name => trimmedLine.toUpperCase() === name);
+            if (isTechnicianName) {
+                currentTechnician = technicians.find(t => t.name.toUpperCase() === isTechnicianName);
                 positionCounter = 0;
                 continue;
             }
-            if (trimmedLine.toUpperCase().includes('MANHÃ')) { currentPeriod = "MANHA"; continue; }
-            if (trimmedLine.toUpperCase().includes('TARDE')) { currentPeriod = "TARDE"; continue; }
-            if (!currentTechnician) {
-                if (!/^\d/.test(trimmedLine) && trimmedLine.length > 2) {
-                    unfoundTechs.add(trimmedLine);
-                }
+            if (trimmedLine.toUpperCase().includes('MANHÃ')) {
+                currentPeriod = "MANHA";
+                continue;
+            }
+            if (trimmedLine.toUpperCase().includes('TARDE')) {
+                currentPeriod = "TARDE";
                 continue;
             }
             
-            const result = parseOsLine(trimmedLine);
-            if (result.success) {
-                const osData = { ...result.data, period: currentPeriod, technicianId: currentTechnician.id, position: positionCounter++ };
-                try {
-                    const response = await fetch(`${API_URL}/service-orders`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(osData) });
-                    if (response.ok) successCount++; else failedLines.push(trimmedLine);
-                } catch (err) { failedLines.push(trimmedLine); }
-            } else if (trimmedLine.length > 5) {
-                failedLines.push(`${trimmedLine} (Motivo: ${result.reason || 'Formato irreconhecível'})`);
+            if (/^\d/.test(trimmedLine)) {
+                if (!currentTechnician) {
+                    failedLines.push(`${trimmedLine} (Motivo: Nenhuma equipe de técnico válida definida acima)`);
+                    continue;
+                }
+                const result = parseOsLine(trimmedLine);
+                if (result.success) {
+                    const osData = { ...result.data, period: currentPeriod, technicianId: currentTechnician.id, position: positionCounter++ };
+                    try {
+                        const response = await fetch(`${API_URL}/service-orders`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(osData) });
+                        if (response.ok) {
+                            successCount++;
+                        } else {
+                            failedLines.push(trimmedLine);
+                        }
+                    } catch (err) {
+                        failedLines.push(trimmedLine);
+                    }
+                } else if (trimmedLine.length > 5) {
+                    failedLines.push(`${trimmedLine} (Motivo: ${result.reason || 'Formato irreconhecível'})`);
+                }
+            } else {
+                unfoundTechs.add(trimmedLine);
             }
         }
         
         let summary = `Importação finalizada!\n✔️ ${successCount} OS foram importadas com sucesso.`;
-        if (unfoundTechs.size > 0) summary += `\n\n⚠️ Rotas ignoradas (Técnicos não cadastrados):\n- ${[...unfoundTechs].join('\n- ')}`;
-        if (failedLines.length > 0) summary += `\n\n❌ As seguintes linhas falharam no processamento:\n- ${failedLines.join('\n- ')}`;
+        if (unfoundTechs.size > 0) {
+            summary += `\n\n⚠️ As seguintes linhas/nomes foram ignorados (Técnicos não cadastrados ou texto desconhecido):\n- ${[...unfoundTechs].join('\n- ')}`;
+        }
+        if (failedLines.length > 0) {
+            summary += `\n\n❌ As seguintes linhas falharam no processamento:\n- ${failedLines.join('\n- ')}`;
+        }
         alert(summary);
 
         loadAllOrders();
@@ -469,14 +500,14 @@
                 body: JSON.stringify(updatedData)
             });
             if (response.ok) {
-                alert('OS atualizada!');
+                alert('OS atualizada com sucesso!');
                 closeEditModal();
                 loadAllOrders();
             } else {
-                alert('Falha ao atualizar.');
+                alert('Falha ao atualizar a OS.');
             }
         } catch (error) {
-            alert('Erro de conexão.');
+            alert('Erro de conexão ao salvar as alterações.');
         }
     });
 
@@ -486,7 +517,7 @@
         }
     }
     
-    // --- NOVA FUNÇÃO PARA DELETAR TODAS AS OS ---
+    // --- LÓGICA DE EXCLUSÃO EM MASSA ---
     async function deleteAllOrders() {
         const confirmationText = "TEM CERTEZA?\n\nEsta ação é IRREVERSÍVEL e irá apagar TODAS as Ordens de Serviço de TODOS os técnicos.\n\nDigite 'EXCLUIR' para confirmar.";
         const userInput = prompt(confirmationText);
@@ -494,7 +525,7 @@
             try {
                 const response = await fetch(`${API_URL}/service-orders/all`, { method: 'DELETE' });
                 if (response.ok) {
-                    alert('Todas as Ordens de Serviço foram excluídas.');
+                    alert('Todas as Ordens de Serviço foram excluídas com sucesso.');
                     loadAllOrders();
                 } else {
                     alert('Falha ao excluir as Ordens de Serviço.');
