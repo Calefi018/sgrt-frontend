@@ -46,8 +46,9 @@
     const API_URL = 'https://sgrt-api.onrender.com';
     const routeContainer = document.getElementById('my-route-container');
     const user = JSON.parse(localStorage.getItem('sgrt_user'));
+    let technicianOrders = []; // Armazena as OS carregadas para uso nas funções
 
-    // --- INICIALIZAÇÃO E AUTENTICAÇÃO ---
+    // --- INICIALIZAÇÃO ---
     document.addEventListener('DOMContentLoaded', () => {
         if (!user || user.role !== 'TECHNICIAN') {
             alert('Acesso negado. Por favor, faça o login como técnico.');
@@ -79,43 +80,46 @@
     });
 
     // --- FUNÇÕES DA PÁGINA ---
-    
     function getCurrentLocation() {
         return new Promise((resolve, reject) => {
             if (!navigator.geolocation) {
-                reject({ code: -1, message: "Geolocalização não é suportada por este navegador." });
-                return;
+                reject({ code: -1, message: "Geolocalização não é suportada." }); return;
             }
             navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    resolve({
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude
-                    });
-                },
-                (error) => {
-                    reject(error);
-                },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } // Opções para maior precisão
+                (position) => resolve({ latitude: position.coords.latitude, longitude: position.coords.longitude }),
+                (error) => reject(error),
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
         });
     }
 
     async function updateStatus(orderId, newStatus) {
+        const orderData = technicianOrders.find(o => o.id === orderId);
+        if (!orderData) return;
+        const currentStatus = orderData.status;
+
+        // REGRA 1: Validação do fluxo de status
+        const allowedTransitions = {
+            'PENDENTE': ['A_CAMINHO', 'REAGENDADA'],
+            'A_CAMINHO': ['EXECUTANDO', 'REAGENDADA', 'PENDENTE'], // Permite voltar para pendente
+            'EXECUTANDO': ['FINALIZADA', 'REAGENDADA']
+        };
+        if (allowedTransitions[currentStatus] && !allowedTransitions[currentStatus].includes(newStatus)) {
+            alert(`Ação não permitida: Não é possível mudar o status de "${currentStatus.replace('_',' ')}" para "${newStatus.replace('_',' ')}".`);
+            return;
+        }
+
         let location = null;
         let justification = null;
 
         if (newStatus === 'A_CAMINHO' || newStatus === 'EXECUTANDO') {
             try {
-                document.body.style.cursor = 'wait'; // Mostra cursor de espera
+                document.body.style.cursor = 'wait';
                 location = await getCurrentLocation();
             } catch (error) {
                 document.body.style.cursor = 'default';
-                if (error.code === 1) { // PERMISSION_DENIED
-                    alert("A permissão de localização foi negada. A mudança de status foi cancelada.");
-                } else {
-                    alert(`Não foi possível obter a localização. Tente novamente.\nErro: ${error.message}`);
-                }
+                if (error.code === 1) { alert("A permissão de localização foi negada. A ação foi cancelada."); } 
+                else { alert(`Não foi possível obter a localização. Erro: ${error.message}`); }
                 return; // BLOQUEIA A AÇÃO
             } finally {
                 document.body.style.cursor = 'default';
@@ -124,10 +128,7 @@
         
         if (newStatus === 'REAGENDADA') {
             justification = prompt("Por favor, digite o motivo do reagendamento:");
-            if (!justification) {
-                alert("O reagendamento foi cancelado pois a justificativa é obrigatória.");
-                return;
-            }
+            if (!justification) { alert("Ação cancelada. A justificativa é obrigatória."); return; }
         }
 
         try {
@@ -137,52 +138,63 @@
                 body: JSON.stringify({ status: newStatus, justification, location })
             });
             if (response.ok) {
-                loadMyRoute();
-            } else {
-                alert('Falha ao atualizar o status no servidor.');
-            }
-        } catch (error) {
-            alert('Erro de conexão ao atualizar status.');
-        }
+                // REGRA 2: Sugestão de próxima OS
+                if (newStatus === 'FINALIZADA') {
+                    // Atualiza a lista de ordens antes de procurar a próxima
+                    await loadMyRoute(true); // true para indicar que é uma recarga silenciosa
+                    const nextOrder = technicianOrders.find(o => o.status === 'PENDENTE');
+
+                    if (nextOrder) {
+                        if (confirm(`OS finalizada com sucesso!\n\nDeseja iniciar o deslocamento para o próximo cliente: ${nextOrder.clientName}?`)) {
+                            updateStatus(nextOrder.id, 'A_CAMINHO');
+                        }
+                    } else {
+                        alert("OS finalizada com sucesso! Todas as OS da sua rota foram concluídas.");
+                    }
+                } else {
+                    loadMyRoute();
+                }
+            } else { alert('Falha ao atualizar o status no servidor.'); }
+        } catch (error) { alert('Erro de conexão ao atualizar status.'); }
     }
     
     function renderOsCard(order) {
         const textToCopy = `${order.clientId} - ${order.clientName}`;
-        return `
-            <div class="os-card">
-                <div class="os-card-header">
-                    <p><strong>ID:</strong> ${order.clientId} - ${order.clientName}</p>
-                    <div>
-                        <button title="Copiar Cliente" onclick="copyToClipboard('${textToCopy}')" class="card-btn-copy">📋</button>
-                        <button title="Transferir OS" onclick="transferOrder('${order.id}')" class="card-btn-transfer">⇆</button>
+        return `<div class="os-card" data-id="${order.id}">
+                    <div class="os-card-header">
+                        <p><strong>ID:</strong> ${order.clientId} - ${order.clientName}</p>
+                        <div>
+                            <button title="Copiar Cliente" onclick="copyToClipboard('${textToCopy}')" class="card-btn-copy">📋</button>
+                            <button title="Transferir OS" onclick="transferOrder('${order.id}')" class="card-btn-transfer">⇆</button>
+                        </div>
                     </div>
-                </div>
-                <p><strong>Endereço:</strong> ${order.address}</p>
-                <p><strong>Problema:</strong> ${order.problemDescription}</p>
-                <p><strong>Prioridade (Base):</strong> ${order.priority}</p>
-                <p><strong>Observações:</strong> ${order.notes || 'Nenhuma'}</p>
-                <div class="os-card-footer">
-                    <span class="status-badge status-${order.status.toLowerCase()}">${order.status.replace('_', ' ')}</span>
-                </div>
-                <div class="actions">
-                    <button onclick="updateStatus('${order.id}', 'A_CAMINHO')">A Caminho</button>
-                    <button onclick="updateStatus('${order.id}', 'EXECUTANDO')">Executando</button>
-                    <button onclick="updateStatus('${order.id}', 'FINALIZADA')">Finalizar</button>
-                    <button onclick="updateStatus('${order.id}', 'REAGENDADA')">Reagendar</button>
-                </div>
-            </div>
-        `;
+                    <p><strong>Endereço:</strong> ${order.address}</p>
+                    <p><strong>Problema:</strong> ${order.problemDescription}</p>
+                    <p><strong>Prioridade (Base):</strong> ${order.priority}</p>
+                    <p><strong>Observações:</strong> ${order.notes || 'Nenhuma'}</p>
+                    <div class="os-card-footer">
+                        <span class="status-badge status-${order.status.toLowerCase()}">${order.status.replace('_', ' ')}</span>
+                    </div>
+                    <div class="actions">
+                        <button onclick="updateStatus('${order.id}', 'A_CAMINHO')">A Caminho</button>
+                        <button onclick="updateStatus('${order.id}', 'EXECUTANDO')">Executando</button>
+                        <button onclick="updateStatus('${order.id}', 'FINALIZADA')">Finalizar</button>
+                        <button onclick="updateStatus('${order.id}', 'REAGENDADA')">Reagendar</button>
+                    </div>
+                </div>`;
     }
     
-    async function loadMyRoute() {
+    async function loadMyRoute(silent = false) {
+        if(!silent) routeContainer.innerHTML = '<p>Buscando sua rota...</p>';
         try {
             const response = await fetch(`${API_URL}/my-route?technicianId=${user.id}`);
             if (!response.ok) throw new Error(`Erro da API`);
             
             const orders = await response.json();
+            technicianOrders = orders;
 
             if (orders.length === 0) {
-                routeContainer.innerHTML = '<h2>Nenhuma Ordem de Serviço atribuída para hoje.</h2>';
+                routeContainer.innerHTML = '<h2>Nenhuma OS atribuída para hoje.</h2>';
                 return;
             }
             routeContainer.innerHTML = '';
@@ -202,7 +214,6 @@
             };
             renderOrderGroup('☀️ MANHÃ', manhaOrders);
             renderOrderGroup('🌙 TARDE', tardeOrders);
-
         } catch (error) {
             routeContainer.innerHTML = `<h2>Não foi possível carregar sua rota. Verifique sua conexão.</h2>`;
         }
@@ -223,25 +234,19 @@
             if (otherTechnicians[choiceIndex]) {
                 const newTechnicianId = otherTechnicians[choiceIndex].id;
                 if(confirm(`Tem certeza que deseja transferir esta OS para ${otherTechnicians[choiceIndex].name}?`)){
-                    await fetch(`${API_URL}/service-orders/${orderId}/transfer`, {
-                        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ newTechnicianId })
-                    });
+                    await fetch(`${API_URL}/service-orders/${orderId}/transfer`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ newTechnicianId }) });
                     alert('OS transferida com sucesso! Ela não aparecerá mais na sua rota.');
                     loadMyRoute();
                 }
-            } else {
-                alert("Seleção inválida.");
-            }
-        } catch(error) {
-            alert('Erro ao buscar técnicos para transferência.');
-        }
+            } else { alert("Seleção inválida."); }
+        } catch(error) { alert('Erro ao buscar técnicos para transferência.'); }
     }
 
     function copyToClipboard(text) {
         navigator.clipboard.writeText(text).then(() => {
-            alert(`Copiado para a área de transferência:\n"${text}"`);
+            alert(`Copiado: "${text}"`);
         }).catch(err => {
-            alert('Falha ao copiar o texto.');
+            alert('Falha ao copiar.');
         });
     }
 </script>
