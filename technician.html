@@ -27,14 +27,13 @@
 
     <main class="app-content">
         <header class="content-header">
-            <h1 id="greeting"></h1>
+            <h1 id="greeting">Carregando...</h1>
             <div class="header-actions">
                 <button id="theme-toggle" class="nav-button">Modo Escuro</button>
             </div>
         </header>
 
         <div class="panel full-width-panel">
-            <h2>Minhas Ordens de Serviço</h2>
             <div id="my-route-container">
                 <p>Carregando rota...</p>
             </div>
@@ -59,6 +58,7 @@
         document.getElementById('admin-link').style.display = 'none';
         document.getElementById('monitoring-link').style.display = 'none';
 
+        // Lógica do Tema Escuro
         const themeToggle = document.getElementById('theme-toggle');
         if (localStorage.getItem('sgrt_theme') === 'dark') {
             document.body.classList.add('dark-mode');
@@ -71,6 +71,7 @@
             localStorage.setItem('sgrt_theme', theme);
         });
 
+        // Saudação Personalizada
         const hour = new Date().getHours();
         let greetingText = (hour < 5 || hour >= 18) ? 'Boa noite' : (hour < 12) ? 'Bom dia' : 'Boa tarde';
         document.getElementById('greeting').textContent = `${greetingText}, ${user.name}!`;
@@ -79,11 +80,9 @@
         setInterval(loadMyRoute, 30000); // Atualiza a rota a cada 30 segundos
     });
 
-
     // --- FUNÇÕES DA PÁGINA ---
     function renderOsCard(order) {
         const textToCopy = `${order.clientId} - ${order.clientName}`;
-        // Ocultamos a informação de tempo de execução para o técnico
         return `
             <div class="os-card">
                 <div class="os-card-header">
@@ -116,14 +115,7 @@
             if (!response.ok) throw new Error(`Erro da API`);
             
             const orders = await response.json();
-            const currentRenderedIds = Array.from(routeContainer.querySelectorAll('.os-card')).map(c => c.dataset.id);
-            const newOrderIds = orders.map(o => o.id);
-
-            // Otimização: Só redesenha a tela se houver alguma mudança
-            if (JSON.stringify(currentRenderedIds) === JSON.stringify(newOrderIds) && routeContainer.innerHTML !== '') {
-                return;
-            }
-
+            
             if (orders.length === 0) {
                 routeContainer.innerHTML = '<h2>Nenhuma Ordem de Serviço atribuída para hoje.</h2>';
                 return;
