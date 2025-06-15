@@ -57,8 +57,11 @@
         </div>
 
         <div class="panel">
-            <h2>Rotas do Dia (Arraste para reordenar)</h2>
-            <div id="routes-container"><p>As rotas agendadas aparecerão aqui.</p></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <h2>Rotas do Dia (Arraste para reordenar)</h2>
+                <button id="delete-all-os-btn" class="btn-delete-all">Excluir Todas as OS</button>
+            </div>
+            <div id="routes-container" style="margin-top: 20px;"><p>As rotas agendadas aparecerão aqui.</p></div>
         </div>
     </main>
 </div>
@@ -99,8 +102,9 @@
     const themeToggle = document.getElementById('theme-toggle');
     const editModal = document.getElementById('edit-os-modal');
     const editForm = document.getElementById('form-edit-os');
+    const deleteAllBtn = document.getElementById('delete-all-os-btn');
 
-    // --- INICIALIZAÇÃO ---
+    // --- INICIALIZAÇÃO E AUTENTICAÇÃO ---
     document.addEventListener('DOMContentLoaded', () => {
         const user = JSON.parse(localStorage.getItem('sgrt_user'));
         if (!user || user.role !== 'ADMIN') {
@@ -119,6 +123,8 @@
             themeToggle.textContent = theme === 'dark' ? 'Modo Claro' : 'Modo Escuro';
             localStorage.setItem('sgrt_theme', theme);
         });
+        
+        deleteAllBtn.addEventListener('click', deleteAllOrders);
 
         loadTechnicians();
         loadAllOrders();
@@ -147,17 +153,9 @@
     
     techForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const data = {
-            name: document.getElementById('tech-name').value,
-            email: document.getElementById('tech-email').value,
-            password: document.getElementById('tech-password').value
-        };
+        const data = { name: document.getElementById('tech-name').value, email: document.getElementById('tech-email').value, password: document.getElementById('tech-password').value };
         try {
-            const response = await fetch(`${API_URL}/technicians`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
+            const response = await fetch(`${API_URL}/technicians`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
             if (response.ok) {
                 alert('Técnico adicionado com sucesso!');
                 techForm.reset();
@@ -198,11 +196,7 @@
 
     async function updateTechnician(id, name, email) {
         try {
-            const response = await fetch(`${API_URL}/technicians/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email })
-            });
+            const response = await fetch(`${API_URL}/technicians/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email }) });
             if (response.ok) {
                 alert('Técnico atualizado com sucesso!');
                 loadTechnicians();
@@ -220,20 +214,13 @@
         try {
             const response = await fetch(`${API_URL}/service-orders`);
             const orders = await response.json();
-            const routesByTechnician = orders.reduce((acc, order) => {
-                const tech = order.technician;
-                if (!tech) return acc;
-                if (!acc[tech.id]) {
-                    acc[tech.id] = { name: tech.name, orders: [] };
-                }
-                acc[tech.id].orders.push(order);
-                return acc;
-            }, {});
+            const routesByTechnician = orders.reduce((acc, order) => { const t = order.technician; if (!t) return acc; if (!acc[t.id]) acc[t.id] = { name: t.name, orders: [] }; acc[t.id].orders.push(order); return acc; }, {});
             
             routesContainer.innerHTML = '';
             if (Object.keys(routesByTechnician).length === 0) {
                 routesContainer.innerHTML = '<p>Nenhuma rota para exibir.</p>';
             }
+
             for (const techId in routesByTechnician) {
                 const techData = routesByTechnician[techId];
                 const column = document.createElement('div');
@@ -276,7 +263,7 @@
                     </div>
                 </div>`;
     }
-    
+
     async function deleteOrder(id) {
         if (!confirm('Excluir esta OS?')) return;
         try {
@@ -330,33 +317,7 @@
             alert('Erro ao buscar técnicos.');
         }
     }
-
-    // --- LÓGICA DO IMPORTADOR INTELIGENTE v2.0 ---
-    function parseOsLine(line) {
-        const idMatch = line.match(/^(\d+)\s*-/);
-        if (!idMatch) return { success: false, reason: "Não inicia com 'ID - '" };
-        const clientId = idMatch[1];
-        let remainingLine = line.substring(idMatch[0].length).trim();
-        let priority = 'D1';
-        const priorityMatch = remainingLine.match(/(D\d|BASE\s*\d)\s*$/i);
-        if (priorityMatch) {
-            const pStr = priorityMatch[0].toUpperCase();
-            priority = pStr.includes("D1") || pStr.includes("BASE 1") ? "D1" : "D2";
-            remainingLine = remainingLine.substring(0, remainingLine.lastIndexOf(priorityMatch[0])).trim();
-        }
-        let notes = "Importado em massa.";
-        const phoneRegex = /(\(\d{2}\)\s*9?\d{4,5}-?\d{4})/g;
-        const phoneMatches = remainingLine.match(phoneRegex);
-        if (phoneMatches) {
-            notes += ` Tel: ${phoneMatches.join(', ')}`;
-            remainingLine = remainingLine.replace(phoneRegex, '').trim();
-        }
-        remainingLine = remainingLine.replace(/--/g, '-').replace(/\s*-\s*$/, '').trim();
-        const parts = remainingLine.split(/\s*-\s*/).map(p => p.trim()).filter(p => p);
-        if (parts.length < 3) return { success: false, reason: "Informações faltando (Nome, Bairro ou Serviço)" };
-        return { success: true, data: { clientId: parseInt(clientId), priority, notes, clientName: parts[0], problemDescription: parts[parts.length - 1], address: parts.slice(1, -1).join(' - ') } };
-    }
-
+    
     importForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const text = document.getElementById('bulk-routes').value;
@@ -408,9 +369,35 @@
         if (unfoundTechs.size > 0) summary += `\n\n⚠️ Rotas ignoradas (Técnicos não cadastrados):\n- ${[...unfoundTechs].join('\n- ')}`;
         if (failedLines.length > 0) summary += `\n\n❌ As seguintes linhas falharam no processamento:\n- ${failedLines.join('\n- ')}`;
         alert(summary);
+
         loadAllOrders();
         importForm.reset();
     });
+
+    function parseOsLine(line) {
+        const idMatch = line.match(/^(\d+)\s*-/);
+        if (!idMatch) return { success: false, reason: "Não inicia com 'ID - '" };
+        const clientId = idMatch[1];
+        let remainingLine = line.substring(idMatch[0].length).trim();
+        let priority = 'D1';
+        const priorityMatch = remainingLine.match(/(D\d|BASE\s*\d)\s*$/i);
+        if (priorityMatch) {
+            const pStr = priorityMatch[0].toUpperCase();
+            priority = pStr.includes("D1") || pStr.includes("BASE 1") ? "D1" : "D2";
+            remainingLine = remainingLine.substring(0, remainingLine.lastIndexOf(priorityMatch[0])).trim();
+        }
+        let notes = "Importado em massa.";
+        const phoneRegex = /(\(\d{2}\)\s*9?\d{4,5}-?\d{4})/g;
+        const phoneMatches = remainingLine.match(phoneRegex);
+        if (phoneMatches) {
+            notes += ` Tel: ${phoneMatches.join(', ')}`;
+            remainingLine = remainingLine.replace(phoneRegex, '').trim();
+        }
+        remainingLine = remainingLine.replace(/--/g, '-').replace(/\s*-\s*$/, '').trim();
+        const parts = remainingLine.split(/\s*-\s*/).map(p => p.trim()).filter(p => p);
+        if (parts.length < 3) return { success: false, reason: "Informações faltando (Nome, Bairro ou Serviço)" };
+        return { success: true, data: { clientId: parseInt(clientId), priority, notes, clientName: parts[0], problemDescription: parts[parts.length - 1], address: parts.slice(1, -1).join(' - ') } };
+    }
 
     // --- LÓGICA DO MODAL DE EDIÇÃO ---
     async function openEditModal(orderId) {
@@ -427,27 +414,72 @@
             document.getElementById('edit-period').value = order.period;
             document.getElementById('edit-notes').value = order.notes || '';
             editModal.style.display = 'flex';
-        } catch (error) { alert('Erro de conexão.'); }
-    }
-    function closeEditModal() { editModal.style.display = 'none'; }
-    editForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const orderId = document.getElementById('edit-os-id').value;
-        const updatedData = { clientId: document.getElementById('edit-clientId').value, clientName: document.getElementById('edit-clientName').value, address: document.getElementById('edit-address').value, problemDescription: document.getElementById('edit-problem').value, priority: document.getElementById('edit-priority').value, period: document.getElementById('edit-period').value, notes: document.getElementById('edit-notes').value };
-        try {
-            const response = await fetch(`${API_URL}/service-orders/${orderId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatedData) });
-            if (response.ok) {
-                alert('OS atualizada!');
-                closeEditModal();
-                loadAllOrders();
-            } else {
-                alert('Falha ao atualizar.');
-            }
         } catch (error) {
             alert('Erro de conexão.');
         }
+    }
+
+    function closeEditModal() {
+        editModal.style.display = 'none';
+    }
+
+    editForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const orderId = document.getElementById('edit-os-id').value;
+        const updatedData = {
+            clientId: document.getElementById('edit-clientId').value,
+            clientName: document.getElementById('edit-clientName').value,
+            address: document.getElementById('edit-address').value,
+            problemDescription: document.getElementById('edit-problem').value,
+            priority: document.getElementById('edit-priority').value,
+            period: document.getElementById('edit-period').value,
+            notes: document.getElementById('edit-notes').value
+        };
+        try {
+            const response = await fetch(`${API_URL}/service-orders/${orderId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedData)
+            });
+            if (response.ok) {
+                alert('OS atualizada com sucesso!');
+                closeEditModal();
+                loadAllOrders();
+            } else {
+                alert('Falha ao atualizar a OS.');
+            }
+        } catch (error) {
+            alert('Erro de conexão ao salvar as alterações.');
+        }
     });
-    window.onclick = (event) => { if (event.target == editModal) closeEditModal(); }
+
+    window.onclick = (event) => {
+        if (event.target == editModal) {
+            closeEditModal();
+        }
+    }
+    
+    // --- NOVA FUNÇÃO PARA DELETAR TODAS AS OS ---
+    async function deleteAllOrders() {
+        const confirmationText = "TEM CERTEZA?\n\nEsta ação é IRREVERSÍVEL e irá apagar TODAS as Ordens de Serviço de TODOS os técnicos.\n\nDigite 'EXCLUIR' para confirmar.";
+        const userInput = prompt(confirmationText);
+
+        if (userInput === 'EXCLUIR') {
+            try {
+                const response = await fetch(`${API_URL}/service-orders/all`, { method: 'DELETE' });
+                if (response.ok) {
+                    alert('Todas as Ordens de Serviço foram excluídas com sucesso.');
+                    loadAllOrders();
+                } else {
+                    alert('Falha ao excluir as Ordens de Serviço.');
+                }
+            } catch (error) {
+                alert('Erro de conexão ao tentar excluir as OS.');
+            }
+        } else {
+            alert('Ação cancelada.');
+        }
+    }
 </script>
 
 </body>
