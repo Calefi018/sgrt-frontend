@@ -1,90 +1,206 @@
-/* sgrt-frontend/style.css (Versão com Modal de Edição) */
+/* sgrt-frontend/style.css (Versão com Sidebar e Otimização Mobile) */
 
-/* --- VARIAVEIS DE COR E TEMA --- */
+/* --- Variáveis de Cor e Tema --- */
 :root {
-    --bg-color: #f4f7f9;
+    --bg-color: #f0f2f5;
+    --sidebar-bg-color: #ffffff;
     --panel-bg-color: #ffffff;
-    --text-color: #2c3e50;
+    --text-color: #0d263b;
     --text-muted-color: #6c757d;
-    --border-color: #dee2e6;
+    --border-color: #e9ecef;
     --primary-color: #007bff;
-    --primary-hover-color: #0056b3;
-    --danger-color: #e74c3c;
-    --secondary-color: #6c757d;
-    --secondary-hover-color: #5a6268;
-    --shadow-color: rgba(0,0,0,0.05);
-    --font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    --primary-hover-color: #0069d9;
+    --shadow-color: rgba(0, 0, 0, 0.08);
+
+    --status-pendente: #6c757d;
+    --status-executando: #ffc107;
+    --status-caminho: #17a2b8;
+    --status-finalizada: #28a745;
+    --status-reagendada: #dc3545;
 }
 
 body.dark-mode {
-    --bg-color: #1a1d21;
-    --panel-bg-color: #2a2d32;
-    --text-color: #e0e0e0;
+    --bg-color: #1c1c1e;
+    --sidebar-bg-color: #2c2c2e;
+    --panel-bg-color: #2c2c2e;
+    --text-color: #e5e5e7;
     --text-muted-color: #a0a0a0;
-    --border-color: #40444a;
-    --primary-color: #0095ff;
-    --primary-hover-color: #2980b9;
-    --shadow-color: rgba(0,0,0,0.2);
+    --border-color: #3a3a3c;
+    --primary-color: #0a84ff;
+    --primary-hover-color: #0060df;
+    --shadow-color: rgba(0, 0, 0, 0.2);
 }
 
-/* --- ESTILOS GERAIS (BASE MOBILE) --- */
+/* --- Estilos Gerais (Reset & Base) --- */
 * { box-sizing: border-box; }
-body { font-family: var(--font-family); background-color: var(--bg-color); color: var(--text-color); margin: 0; transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out; }
-h1 { font-size: 1.8em; text-align: center; margin: 20px 15px; }
-h2 { font-size: 1.4em; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-top: 0; }
-h3 { font-size: 1.1em; color: var(--text-muted-color); margin-bottom: 15px; }
-hr { border: none; border-top: 1px solid var(--border-color); margin: 25px 0; }
+html { height: 100%; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+h1, h2, h3, h4 { color: var(--text-color); }
+p { color: var(--text-muted-color); }
 
-/* --- LAYOUT PRINCIPAL --- */
-.main-container { padding: 0 15px 30px 15px; }
-.panel-group { display: flex; flex-direction: column; gap: 20px; }
-.panel { background-color: var(--panel-bg-color); padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px var(--shadow-color); border: 1px solid var(--border-color); }
-.full-width-panel { flex-basis: 100%; }
+/* --- Novo Layout Principal com Sidebar --- */
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
 
-/* --- MENU DE NAVEGAÇÃO --- */
-nav.main-menu { position: sticky; top: 0; z-index: 10; background-color: var(--panel-bg-color); border-bottom: 1px solid var(--border-color); }
-nav.main-menu ul { list-style-type: none; margin: 0; padding: 0 15px; display: flex; justify-content: space-between; align-items: center; height: 60px; }
-nav.main-menu .logo { color: var(--text-color); font-size: 1.2em; font-weight: bold; text-decoration: none; }
-nav.main-menu .nav-links { display: flex; align-items: center; gap: 5px; }
-nav.main-menu .nav-links a { color: var(--text-muted-color); padding: 0 10px; font-weight: 500; text-decoration: none; }
-.nav-button { background-color: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); padding: 6px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: bold; }
+#app-sidebar {
+    width: 240px;
+    background-color: var(--sidebar-bg-color);
+    border-right: 1px solid var(--border-color);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    transition: width 0.2s;
+}
+#app-sidebar .logo {
+    font-size: 1.8em;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 30px;
+    color: var(--primary-color);
+}
+.sidebar-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.sidebar-nav li a {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 15px;
+    text-decoration: none;
+    color: var(--text-muted-color);
+    border-radius: 6px;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+.sidebar-nav li a:hover, .sidebar-nav li a.active {
+    background-color: var(--primary-color);
+    color: white;
+}
 
-/* --- FORMULÁRIOS E BOTÕES --- */
-form { display: flex; flex-direction: column; gap: 15px; }
-input, select, textarea { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 5px; font-size: 16px; background-color: var(--bg-color); color: var(--text-color); }
-button { background-color: var(--primary-color); color: white; padding: 14px 15px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; }
-button:hover { filter: brightness(1.1); }
-button.btn-danger { background-color: var(--danger-color); }
-button.btn-secondary { background-color: var(--secondary-color); font-size: 12px; padding: 5px 10px; }
+.app-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
 
-/* --- LISTAS E CARDS --- */
-#technician-list li { background-color: var(--bg-color); padding: 10px 15px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
-.os-card { background-color: var(--panel-bg-color); border: 1px solid var(--border-color); border-radius: 6px; padding: 15px; margin-bottom: 10px; box-shadow: 0 2px 5px var(--shadow-color); position: relative; }
-.os-card-header { display: flex; justify-content: space-between; align-items: center; gap: 5px; }
-.os-card-header p { font-weight: bold; margin: 0; flex: 1; }
-.os-card-header div { display: flex; }
-.card-btn-edit, .card-btn-delete, .card-btn-transfer { background: none; border: none; font-size: 1.3em; cursor: pointer; padding: 5px; color: var(--text-muted-color); }
-.card-btn-edit:hover { color: var(--primary-color); }
-.card-btn-delete:hover { color: var(--danger-color); }
-.card-btn-transfer:hover { color: #2ecc71; } /* Verde para transferência */
+/* --- Cabeçalho dentro do Conteúdo --- */
+.content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.content-header h1 {
+    margin: 0;
+    font-size: 1.8em;
+}
+.header-actions {
+    display: flex;
+    gap: 15px;
+}
+.nav-button {
+    background-color: var(--panel-bg-color);
+    color: var(--primary-color);
+    border: 1px solid var(--border-color);
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+}
 
-/* --- DASHBOARD DE ROTAS (ADMIN) --- */
-#routes-container { display: flex; gap: 20px; overflow-x: auto; padding: 10px 5px 15px 5px; min-height: 300px; }
-.technician-column { min-width: 320px; flex-shrink: 0; background-color: var(--bg-color); border-radius: 8px; padding: 15px; }
-
-/* --- MODAL DE EDIÇÃO --- */
-.modal {
-    display: none; 
-    position: fixed; 
-    z-index: 20; 
-    left: 0;
-    top: 0;
-    width: 100%; 
-    height: 100%; 
-    overflow: auto; 
-    background-color: rgba(0,0,0,0.6);
-    justify-content: center;
+/* --- Painéis e Cards --- */
+.panel {
+    background-color: var(--panel-bg-color);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px var(--shadow-color);
+    border: 1px solid var(--border-color);
+    margin-bottom: 20px;
+}
+.os-card {
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--text-muted-color);
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+}
+.os-card-header {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
 }
-.modal-content {
-    background-color: var(--panel-bg-color);
+.os-card-header p strong {
+    font-size: 1.1em;
+}
+
+/* --- NOVO ESTILO DE STATUS (BADGES) --- */
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: bold;
+    color: white;
+    text-transform: uppercase;
+}
+.status-pendente { background-color: var(--status-pendente); }
+.status-a_caminho { background-color: var(--status-caminho); }
+.status-executando { background-color: var(--status-executando); color: #333; }
+.status-finalizada { background-color: var(--status-finalizada); }
+.status-reagendada { background-color: var(--status-reagendada); }
+
+
+/* --- PAINEL DE MONITORAMENTO --- */
+.monitoring-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
+.monitoring-card { border-left: 5px solid var(--border-color); /* Cor padrão */ background: var(--panel-bg-color); padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px var(--shadow-color); }
+.monitoring-card.status-executing { border-left-color: var(--status-executing); }
+.monitoring-card.status-enroute { border-left-color: var(--status-caminho); }
+.monitoring-card.status-finished { border-left-color: var(--status-finalizada); }
+
+/* --- RESPONSIVIDADE PARA CELULARES --- */
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+    }
+    #app-sidebar {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding: 5px 15px;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+    #app-sidebar .logo {
+        font-size: 1.5em;
+        margin: 0;
+    }
+    .sidebar-nav ul {
+        display: flex;
+    }
+    .sidebar-nav li a {
+        padding: 10px;
+        margin: 0;
+    }
+    .sidebar-nav li a span { /* Esconde o texto dos links no menu mobile */
+        display: none;
+    }
+    .app-content {
+        padding: 15px;
+    }
+    .content-header h1 {
+        font-size: 1.5em;
+    }
+}
