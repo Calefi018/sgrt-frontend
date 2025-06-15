@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relatórios - SGRT</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=1.1">
 </head>
 <body>
 
@@ -56,7 +56,7 @@
 
         <div class="panel">
             <h2>Resultados</h2>
-            <div id="report-results">
+            <div id="report-results" style="overflow-x: auto;">
                 <p>Selecione um período e clique em "Gerar Relatório" para ver os dados.</p>
             </div>
         </div>
@@ -140,7 +140,6 @@
         const today = new Date();
         const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
         
-        // Formata as datas para YYYY-MM-DD
         const toISODateString = (date) => {
             const pad = (num) => num < 10 ? '0' + num : num;
             return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
@@ -176,6 +175,7 @@
                         <th>Tempo Exec.</th>
                         <th>Status Final</th>
                         <th>Histórico de Status</th>
+                        <th>Localizações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -188,6 +188,14 @@
             });
             historyHtml += '</ul>';
 
+            let locationHtml = '';
+            if (order.startTravelLatitude) {
+                locationHtml += `<a href="https://maps.google.com/?q=${order.startTravelLatitude},${order.startTravelLongitude}" target="_blank" class="map-link">📍 Ponto de Partida</a><br>`;
+            }
+            if (order.executionLatitude) {
+                locationHtml += `<a href="https://maps.google.com/?q=${order.executionLatitude},${order.executionLongitude}" target="_blank" class="map-link">🛠️ Local de Execução</a>`;
+            }
+
             tableHtml += `
                 <tr>
                     <td>${formatDateTime(order.createdAt)}</td>
@@ -197,6 +205,7 @@
                     <td>${order.executionDuration ? `${order.executionDuration} min` : 'N/A'}</td>
                     <td><span class="status-badge status-${order.status.toLowerCase()}">${order.status.replace('_', ' ')}</span></td>
                     <td>${historyHtml}</td>
+                    <td>${locationHtml || 'N/A'}</td>
                 </tr>
             `;
         });
