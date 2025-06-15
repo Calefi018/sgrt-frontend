@@ -95,8 +95,8 @@
     // --- ELEMENTOS DO DOM ---
     const techForm = document.getElementById('form-create-technician');
     const techList = document.getElementById('technician-list');
-    const importTechSelect = document.getElementById('import-technician-select');
     const osTechSelect = document.getElementById('os-technician-select');
+    const importTechSelect = document.getElementById('import-technician-select');
     const routesContainer = document.getElementById('routes-container');
     const importForm = document.getElementById('form-import-routes');
     const osForm = document.getElementById('form-create-os');
@@ -104,7 +104,7 @@
     const editModal = document.getElementById('edit-os-modal');
     const editForm = document.getElementById('form-edit-os');
 
-    // --- INICIALIZAÇÃO E AUTENTICAÇÃO ---
+    // --- INICIALIZAÇÃO GERAL ---
     document.addEventListener('DOMContentLoaded', () => {
         const user = JSON.parse(localStorage.getItem('sgrt_user'));
         if (!user || user.role !== 'ADMIN') {
@@ -113,6 +113,7 @@
             return;
         }
 
+        // Configura o tema
         if (localStorage.getItem('sgrt_theme') === 'dark') {
             document.body.classList.add('dark-mode');
             themeToggle.textContent = 'Modo Claro';
@@ -148,18 +149,22 @@
             });
         } catch (error) { techList.innerHTML = `<li>Erro ao carregar técnicos.</li>`; }
     }
-    techForm.addEventListener('submit', async e => { e.preventDefault(); const d = { name: document.getElementById('tech-name').value, email: document.getElementById('tech-email').value, password: document.getElementById('tech-password').value }; try { const r = await fetch(`${API_URL}/technicians`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}); if(r.ok){alert('Técnico adicionado!'); techForm.reset(); loadTechnicians();}else{alert('Falha. Email já existe?');}}catch(err){alert('Erro de conexão.');}});
-    async function deleteTechnician(id) { if (!confirm('Tem certeza? Isso excluirá o técnico e todas as suas OS.')) return; try { const r = await fetch(`${API_URL}/technicians/${id}`,{method:'DELETE'}); if (r.ok){alert('Excluído!'); loadTechnicians(); loadAllOrders();}else{alert('Falha.');}}catch(err){alert('Erro.');}}
-    function editTechnician(id, name, email) { const nN=prompt("Novo nome:",name); if(nN===null)return; const nE=prompt("Novo email:",email); if(nE===null)return; if(nN&&nE)updateTechnician(id,nN,nE); }
-    async function updateTechnician(id, name, email) { try { const r=await fetch(`${API_URL}/technicians/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email})}); if(r.ok){alert('Atualizado!'); loadTechnicians(); loadAllOrders();}else{alert('Falha.');}}catch(err){alert('Erro.');}}
+    techForm.addEventListener('submit', async e => { e.preventDefault(); const d = { name: document.getElementById('tech-name').value, email: document.getElementById('tech-email').value, password: document.getElementById('tech-password').value }; try { const r = await fetch(`${API_URL}/technicians`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }); if (r.ok) { alert('Técnico adicionado!'); techForm.reset(); loadTechnicians(); } else { alert('Falha ao adicionar. O email já pode existir.'); } } catch (err) { alert('Erro de conexão.'); } });
+    async function deleteTechnician(id) { if (!confirm('Tem certeza que quer excluir este técnico? Todas as OS dele também serão removidas.')) return; try { const r = await fetch(`${API_URL}/technicians/${id}`, { method: 'DELETE' }); if (r.ok) { alert('Técnico excluído!'); loadTechnicians(); loadAllOrders(); } else { alert('Falha ao excluir.'); } } catch (err) { alert('Erro de conexão.'); } }
+    function editTechnician(id, name, email) { const newName = prompt("Digite o novo nome:", name); if (newName === null) return; const newEmail = prompt("Digite o novo email:", email); if (newEmail === null) return; if (newName && newEmail) updateTechnician(id, newName, newEmail); }
+    async function updateTechnician(id, name, email) { try { const r = await fetch(`${API_URL}/technicians/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email }) }); if (r.ok) { alert('Técnico atualizado!'); loadTechnicians(); loadAllOrders(); } else { alert('Falha ao atualizar.'); } } catch (err) { alert('Erro de conexão.'); } }
 
     // --- LÓGICA DE ORDENS DE SERVIÇO ---
     osForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const technicianId = document.getElementById('os-technician-select').value;
+        const technicianId = osTechSelect.value;
         if (!technicianId) return alert('Por favor, selecione um técnico!');
-        const osData = { clientId: parseInt(document.getElementById('os-clientId').value), clientName: document.getElementById('os-clientName').value, address: document.getElementById('os-address').value, problemDescription: document.getElementById('os-problem').value, priority: document.getElementById('os-priority').value, period: document.getElementById('os-period').value, technicianId };
         try {
+            const maxPosResponse = await fetch(`${API_URL}/my-route?technicianId=${technicianId}`);
+            const techOrders = await maxPosResponse.json();
+            const osData = {
+                clientId: parseInt(document.getElementById('os-clientId').value), clientName: document.getElementById('os-clientName').value, address: document.getElementById('os-address').value, problemDescription: document.getElementById('os-problem').value, priority: document.getElementById('os-priority').value, period: document.getElementById('os-period').value, technicianId: technicianId, position: techOrders.length
+            };
             const response = await fetch(`${API_URL}/service-orders`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(osData) });
             if (response.ok) { alert('OS criada com sucesso!'); osForm.reset(); loadAllOrders(); } else { alert('Falha ao criar OS.'); }
         } catch (error) { alert('Erro de conexão ao criar OS.'); }
@@ -171,15 +176,15 @@
             const response = await fetch(`${API_URL}/service-orders`);
             const orders = await response.json();
             if (orders.length === 0) { routesContainer.innerHTML = '<p>Nenhuma rota agendada.</p>'; return; }
-            const routesByTechnician = orders.reduce((acc, order) => { const t = order.technician; if(!t) return acc; if(!acc[t.id]) acc[t.id]={name:t.name, orders:[]}; acc[t.id].orders.push(order); return acc; }, {});
+            const routesByTechnician = orders.reduce((acc, order) => { const t = order.technician; if (!t) return acc; if (!acc[t.id]) acc[t.id] = { name: t.name, orders: [] }; acc[t.id].orders.push(order); return acc; }, {});
             routesContainer.innerHTML = '';
             for (const techId in routesByTechnician) {
                 const techData = routesByTechnician[techId];
                 const column = document.createElement('div');
                 column.className = 'technician-column';
                 let html = `<h3>${techData.name}</h3>`;
-                const manha = techData.orders.filter(o=>o.period==='MANHA').sort((a,b)=>a.position - b.position);
-                const tarde = techData.orders.filter(o=>o.period==='TARDE').sort((a,b)=>a.position - b.position);
+                const manha = techData.orders.filter(o => o.period === 'MANHA').sort((a,b)=>a.position - b.position);
+                const tarde = techData.orders.filter(o => o.period === 'TARDE').sort((a,b)=>a.position - b.position);
                 html += `<div class="period-group"><h4>☀️ MANHÃ</h4><div class="os-list" id="list-manha-${techId}">`;
                 manha.forEach(order => { html += renderOsCard(order); });
                 html += `</div></div>`;
@@ -195,64 +200,92 @@
 
     function renderOsCard(order) {
         return `<div class="os-card" data-id="${order.id}">
-            <div class="os-card-header">
-                <p><strong>ID:</strong> ${order.clientId} - ${order.clientName}</p>
-                <div>
-                    <button title="Editar OS" onclick="openEditModal('${order.id}')" class="card-btn-edit">✎</button>
-                    <button title="Transferir OS" onclick="transferOrder('${order.id}')" class="card-btn-transfer">⇆</button>
-                    <button title="Excluir OS" onclick="deleteOrder('${order.id}')" class="card-btn-delete">×</button>
-                </div>
-            </div>
-            <p><strong>Problema:</strong> ${order.problemDescription}</p>
-            <p><strong>Endereço:</strong> ${order.address}</p>
-            <p><strong>Status:</strong> <span class="status-${order.status.toLowerCase()}">${order.status.replace('_', ' ')}</span></p>
-        </div>`;
+                    <div class="os-card-header">
+                        <p><strong>ID:</strong> ${order.clientId} - ${order.clientName}</p>
+                        <div>
+                            <button title="Editar OS" onclick="openEditModal('${order.id}')" class="card-btn-edit">✎</button>
+                            <button title="Transferir OS" onclick="transferOrder('${order.id}')" class="card-btn-transfer">⇆</button>
+                            <button title="Excluir OS" onclick="deleteOrder('${order.id}')" class="card-btn-delete">×</button>
+                        </div>
+                    </div>
+                    <p><strong>Problema:</strong> ${order.problemDescription}</p>
+                    <p><strong>Endereço:</strong> ${order.address}</p>
+                    <p><strong>Status:</strong> <span class="status-${order.status.toLowerCase()}">${order.status.replace('_', ' ')}</span></p>
+                </div>`;
     }
     
-    async function deleteOrder(id) { if(!confirm('Excluir esta OS?'))return; try{const r=await fetch(`${API_URL}/service-orders/${id}`,{method:'DELETE'});if(r.ok)loadAllOrders();else alert('Falha.');}catch(e){alert('Erro.');}}
-    async function saveNewOrder(evt) { const list = evt.to; const allCards = Array.from(list.closest('.routes-container').querySelectorAll('.os-card')); const orderedIds = allCards.map(c=>c.dataset.id); try {await fetch(`${API_URL}/service-orders/reorder`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderedIds})});}catch(e){alert('Erro ao salvar ordem.');}}
-    async function transferOrder(id) { try {const r=await fetch(`${API_URL}/technicians`);const t=await r.json();let opts=t.map((tech,i)=>`${i+1} - ${tech.name}`).join('\n');const c=prompt(`Transferir para:\n${opts}`); if(!c)return; const i=parseInt(c)-1; if(t[i]){const nTID=t[i].id; await fetch(`${API_URL}/service-orders/${id}/transfer`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({newTechnicianId:nTID})}); loadAllOrders();}else{alert("Seleção inválida.");}}catch(e){alert('Erro.');}}
+    async function deleteOrder(id) { if (!confirm('Excluir esta OS?')) return; try { const r = await fetch(`${API_URL}/service-orders/${id}`, { method: 'DELETE' }); if (r.ok) loadAllOrders(); else alert('Falha.'); } catch (e) { alert('Erro.'); } }
+    async function saveNewOrder(evt) { const allCards = Array.from(document.querySelectorAll('.os-card')); const orderedIds = allCards.map(c => c.dataset.id); try { await fetch(`${API_URL}/service-orders/reorder`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderedIds }) }); } catch (e) { alert('Erro ao salvar ordem.'); } }
+    async function transferOrder(id) { try { const r = await fetch(`${API_URL}/technicians`); const t = await r.json(); let opts = t.map((tech, i) => `${i + 1} - ${tech.name}`).join('\n'); const c = prompt(`Transferir para:\n${opts}`); if (!c) return; const i = parseInt(c) - 1; if (t[i]) { const nTID = t[i].id; if(confirm(`Tem certeza que quer transferir para ${t[i].name}?`)){ await fetch(`${API_URL}/service-orders/${id}/transfer`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ newTechnicianId: nTID }) }); loadAllOrders(); }} else { alert("Seleção inválida."); } } catch (e) { alert('Erro.'); } }
 
     // --- LÓGICA DO "SUPER IMPORTADOR INTELIGENTE" ---
     function parseOsLine(line) {
-        const idMatch = line.match(/^(\d+)\s*-\s*/);
-        if (!idMatch) return { success: false };
+        const idMatch = line.match(/^(\d+)\s*-/);
+        if (!idMatch) return { success: false, reason: "Não inicia com 'ID - '" };
         const clientId = idMatch[1];
-        line = line.replace(idMatch[0], '').trim();
-        const priorityMatch = line.match(/(D\d|BASE\s*\d)\s*$/i);
-        let priority = 'D1'; // Padrão
+        let remainingLine = line.substring(idMatch[0].length).trim();
+
+        const priorityMatch = remainingLine.match(/(D\d|BASE\s*\d)\s*$/i);
+        let priority = 'D1';
         if (priorityMatch) {
-            priority = priorityMatch[0].toUpperCase().includes("BASE 1") || priorityMatch[0].includes("D1") ? "D1" : "D2";
-            line = line.substring(0, line.lastIndexOf(priorityMatch[0])).trim();
+            const pStr = priorityMatch[0].toUpperCase();
+            priority = pStr.includes("D1") || pStr.includes("BASE 1") ? "D1" : "D2";
+            remainingLine = remainingLine.substring(0, remainingLine.lastIndexOf(priorityMatch[0])).trim();
         }
+
         let notes = "Importado em massa.";
         const phoneRegex = /(\(\d{2}\)\s*9?\d{4,5}-?\d{4})/g;
-        const phoneMatch = line.match(phoneRegex);
-        if (phoneMatch) { notes += ` Tel: ${phoneMatch[0]}`; line = line.replace(phoneRegex, '').trim(); }
-        line = line.replace(/--/g, '-').replace(/\s*-\s*$/, '').trim();
-        const parts = line.split(/\s*-\s*/);
-        if (parts.length < 3) return { success: false };
-        return { success: true, data: { clientId, priority, notes, clientName: parts[0].trim(), problemDescription: parts[parts.length - 1].trim(), address: parts.slice(1, -1).join(' - ').trim() } };
+        const phoneMatches = remainingLine.match(phoneRegex);
+        if (phoneMatches) {
+            notes += ` Tel: ${phoneMatches.join(', ')}`;
+            remainingLine = remainingLine.replace(phoneRegex, '').trim();
+        }
+        
+        remainingLine = remainingLine.replace(/--/g, '-').replace(/\s*-\s*$/, '').trim();
+        const parts = remainingLine.split(/\s*-\s*/).map(p => p.trim()).filter(p => p);
+        if (parts.length < 3) return { success: false, reason: "Informações faltando (Nome, Bairro ou Serviço)" };
+
+        return {
+            success: true,
+            data: { clientId: parseInt(clientId), priority, notes, clientName: parts[0], problemDescription: parts[parts.length - 1], address: parts.slice(1, -1).join(' - ') }
+        };
     }
 
     importForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const text = document.getElementById('bulk-routes').value;
         const lines = text.split('\n').filter(line => line.trim() !== '');
-        if (lines.length === 0) return alert('Cole as rotas na caixa de texto.');
-        let technicians = await (await fetch(`${API_URL}/technicians`)).json();
+        if (lines.length === 0) return alert('Por favor, cole as rotas na caixa de texto.');
+        
+        const technicians = await (await fetch(`${API_URL}/technicians`)).json();
+        const technicianNames = technicians.map(t => t.name.toUpperCase());
+        
         let currentTechnicianId = null;
         let currentPeriod = "MANHA";
+        let unfoundTechs = new Set();
         let failedLines = [];
         let successCount = 0;
         let positionCounter = 0;
+
         for (const line of lines) {
             const trimmedLine = line.trim();
-            const foundTech = technicians.find(t => trimmedLine.toUpperCase().includes(t.name.toUpperCase()));
-            if (foundTech) { currentTechnicianId = foundTech.id; continue; }
+            if (!trimmedLine) continue;
+
+            const foundTechName = technicianNames.find(name => trimmedLine.toUpperCase() === name);
+            if (foundTechName) {
+                currentTechnicianId = technicians.find(t => t.name.toUpperCase() === foundTechName).id;
+                console.log(`Técnico definido como: ${foundTechName}`);
+                continue;
+            }
             if (trimmedLine.toUpperCase().includes('MANHÃ')) { currentPeriod = "MANHA"; continue; }
             if (trimmedLine.toUpperCase().includes('TARDE')) { currentPeriod = "TARDE"; continue; }
-            if (!currentTechnicianId) continue;
+            if (!currentTechnicianId) {
+                if (!/^\d/.test(trimmedLine) && trimmedLine.length > 2) {
+                    unfoundTechs.add(trimmedLine);
+                }
+                continue;
+            }
+            
             const result = parseOsLine(trimmedLine);
             if (result.success) {
                 const osData = { ...result.data, period: currentPeriod, technicianId: currentTechnicianId, position: positionCounter++ };
@@ -260,11 +293,16 @@
                     const response = await fetch(`${API_URL}/service-orders`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(osData) });
                     if (response.ok) successCount++; else failedLines.push(trimmedLine);
                 } catch (err) { failedLines.push(trimmedLine); }
-            } else { failedLines.push(trimmedLine); }
+            } else if (trimmedLine.length > 5) { // Ignora linhas muito curtas
+                failedLines.push(`${trimmedLine} (Motivo: ${result.reason || 'Formato irreconhecível'})`);
+            }
         }
-        let summary = `Importação finalizada! ${successCount} OS foram importadas.`;
-        if (failedLines.length > 0) { summary += `\n\nAs seguintes linhas falharam:\n- ${failedLines.join('\n- ')}`; }
+        
+        let summary = `Importação finalizada!\n✔️ ${successCount} OS foram importadas com sucesso.`;
+        if (unfoundTechs.size > 0) summary += `\n\n⚠️ As rotas para os seguintes nomes foram ignoradas (Técnicos não cadastrados):\n- ${[...unfoundTechs].join('\n- ')}`;
+        if (failedLines.length > 0) summary += `\n\n❌ As seguintes linhas falharam no processamento:\n- ${failedLines.join('\n- ')}`;
         alert(summary);
+
         loadAllOrders();
         importForm.reset();
     });
@@ -290,7 +328,7 @@
     editForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const orderId = document.getElementById('edit-os-id').value;
-        const updatedData = { clientId:document.getElementById('edit-clientId').value, clientName:document.getElementById('edit-clientName').value, address:document.getElementById('edit-address').value, problemDescription:document.getElementById('edit-problem').value, priority:document.getElementById('edit-priority').value, period:document.getElementById('edit-period').value, notes:document.getElementById('edit-notes').value };
+        const updatedData = { clientId: document.getElementById('edit-clientId').value, clientName: document.getElementById('edit-clientName').value, address: document.getElementById('edit-address').value, problemDescription: document.getElementById('edit-problem').value, priority: document.getElementById('edit-priority').value, period: document.getElementById('edit-period').value, notes: document.getElementById('edit-notes').value };
         try {
             const response = await fetch(`${API_URL}/service-orders/${orderId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatedData) });
             if (response.ok) { alert('OS atualizada!'); closeEditModal(); loadAllOrders(); } else { alert('Falha ao atualizar.'); }
