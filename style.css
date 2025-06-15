@@ -1,38 +1,42 @@
-/* sgrt-frontend/style.css (Versão Corrigida e Verificada) */
+/* sgrt-frontend/style.css (Design Original + Layout de Sidebar Responsivo) */
 
-/* --- Variáveis de Cor e Tema --- */
+/* --- Variáveis de Cor e Tema (Restauradas ao estilo que você gostava) --- */
 :root {
-    --bg-color: #f0f2f5;
+    --bg-color: #f4f7f9;
     --sidebar-bg-color: #ffffff;
     --panel-bg-color: #ffffff;
-    --text-color: #0d263b;
+    --text-color: #2c3e50;
     --text-muted-color: #6c757d;
     --border-color: #e9ecef;
-    --primary-color: #007bff;
-    --primary-hover-color: #0069d9;
-    --danger-color: #dc3545;
-    --danger-hover-color: #c82333;
+    --primary-color: #3498db;
+    --primary-hover-color: #2980b9;
+    --danger-color: #e74c3c;
+    --danger-hover-color: #c0392b;
     --secondary-color: #6c757d;
     --secondary-hover-color: #5a6268;
-    --shadow-color: rgba(0, 0, 0, 0.08);
-    --font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    --shadow-color: rgba(0,0,0,0.08);
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    
+    --status-executing-color: #f39c12;
+    --status-enroute-color: #3498db;
+    --status-finished-color: #2ecc71;
 }
 
 body.dark-mode {
-    --bg-color: #1c1c1e;
-    --sidebar-bg-color: #2c2c2e;
-    --panel-bg-color: #2c2c2e;
-    --text-color: #e5e5e7;
+    --bg-color: #1a1d21;
+    --sidebar-bg-color: #2a2d32;
+    --panel-bg-color: #2a2d32;
+    --text-color: #e0e0e0;
     --text-muted-color: #a0a0a0;
-    --border-color: #3a3a3c;
-    --primary-color: #0a84ff;
-    --primary-hover-color: #0060df;
+    --border-color: #40444a;
+    --primary-color: #3498db;
+    --primary-hover-color: #2980b9;
     --danger-color: #e74c3c;
     --danger-hover-color: #c0392b;
-    --shadow-color: rgba(0, 0, 0, 0.2);
+    --shadow-color: rgba(0,0,0,0.25);
 }
 
-/* --- Estilos Gerais (Reset & Base) --- */
+/* --- Estilos Gerais --- */
 * { box-sizing: border-box; }
 html { height: 100%; }
 body {
@@ -40,77 +44,83 @@ body {
     background-color: var(--bg-color);
     color: var(--text-color);
     margin: 0;
-    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    font-size: 16px;
 }
 h1, h2, h3, h4 { color: var(--text-color); margin: 0; }
 h1 { font-size: 1.8em; }
-h2 { font-size: 1.4em; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+h2 { font-size: 1.4em; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px; }
 p { line-height: 1.6; color: var(--text-muted-color); }
 hr { border: none; border-top: 1px solid var(--border-color); margin: 25px 0; }
-ul { list-style: none; padding: 0; margin: 0; }
 a { color: var(--primary-color); text-decoration: none; }
 
-/* --- Novo Layout Principal com Sidebar --- */
-.app-container {
-    display: flex;
-    min-height: 100vh;
-}
-
+/* --- Layout Principal com Sidebar --- */
+.app-container { display: flex; min-height: 100vh; }
 #app-sidebar {
-    width: 240px;
+    width: 260px;
     background-color: var(--sidebar-bg-color);
     border-right: 1px solid var(--border-color);
     padding: 20px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    transition: width 0.2s;
     flex-shrink: 0;
 }
-#app-sidebar .logo { font-size: 1.8em; font-weight: bold; text-align: center; margin-bottom: 30px; color: var(--primary-color); }
-.sidebar-nav li a { display: flex; align-items: center; gap: 15px; padding: 12px 15px; text-decoration: none; color: var(--text-muted-color); border-radius: 6px; margin-bottom: 5px; font-weight: 500; }
+.app-content { flex: 1; padding: 30px; overflow-y: auto; }
+
+/* --- Sidebar --- */
+#app-sidebar .logo { font-size: 1.8em; font-weight: bold; text-align: center; margin-bottom: 40px; color: var(--primary-color); }
+.sidebar-nav ul { list-style: none; padding: 0; margin: 0; }
+.sidebar-nav li a { display: flex; align-items: center; gap: 15px; padding: 12px 15px; text-decoration: none; color: var(--text-muted-color); border-radius: 6px; margin-bottom: 5px; font-weight: 500; transition: all 0.2s ease; }
 .sidebar-nav li a:hover { background-color: var(--bg-color); color: var(--text-color); }
 .sidebar-nav li a.active { background-color: var(--primary-color); color: white; }
+.sidebar-footer a { color: var(--text-muted-color); font-weight: 500; }
 
-.app-content {
-    flex: 1;
-    padding: 20px;
-    overflow-y: auto;
-    width: 100%;
-}
-
-/* --- Cabeçalho dentro do Conteúdo --- */
+/* --- Cabeçalho do Conteúdo --- */
 .content-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-.content-header h1 { margin: 0; }
-.header-actions { display: flex; gap: 15px; }
-.nav-button { background-color: var(--panel-bg-color); color: var(--primary-color); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: 500; }
-body.dark-mode .nav-button { color: var(--primary-color); border-color: var(--primary-color); }
-
+.nav-button { background-color: var(--panel-bg-color); color: var(--text-color); border: 1px solid var(--border-color); padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: 500; }
 
 /* --- Painéis e Grupos --- */
 .panel-group { display: flex; flex-direction: column; gap: 30px; }
 .panel { background-color: var(--panel-bg-color); padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px var(--shadow-color); border: 1px solid var(--border-color); margin-bottom: 30px; }
-.os-card { background-color: var(--bg-color); border: 1px solid var(--border-color); border-left: 4px solid var(--text-muted-color); padding: 15px; margin-bottom: 10px; border-radius: 6px; }
 
-/* --- ESTILO DE STATUS (BADGES) --- */
+/* --- Formulários --- */
+form { display: flex; flex-direction: column; gap: 15px; }
+input, select, textarea { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 5px; font-size: 16px; background-color: var(--bg-color); color: var(--text-color); }
+button { background-color: var(--primary-color); color: white; padding: 14px 15px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; transition: background-color 0.2s; }
+button:hover { background-color: var(--primary-hover-color); }
+
+/* --- Cards de OS e Listas --- */
+.os-card { background-color: var(--bg-color); border: 1px solid var(--border-color); border-left: 4px solid var(--text-muted-color); padding: 15px; margin-bottom: 10px; border-radius: 6px; }
+.os-card-header { display: flex; justify-content: space-between; align-items: center; }
+.os-card-header p strong { font-size: 1.1em; color: var(--text-color); }
+
+/* --- Badges de Status --- */
 .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: bold; color: white; text-transform: uppercase; }
-.status-pendente { background-color: var(--text-muted-color); }
+.status-pendente { background-color: #6c757d; }
 .status-a_caminho { background-color: #17a2b8; }
 .status-executando { background-color: #ffc107; color: #333; }
 .status-finalizada { background-color: #28a745; }
-.status-reagendada { background-color: var(--danger-color); }
+.status-reagendada { background-color: #dc3545; }
 
-/* --- RESPONSIVIDADE PARA CELULARES --- */
+/* --- Painel de Monitoramento --- */
+.monitoring-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
+.monitoring-card { background: var(--panel-bg-color); padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px var(--shadow-color); border-left: 5px solid var(--border-color); }
+.monitoring-card.status-executing { border-left-color: var(--status-executing-color); }
+.monitoring-card.status-enroute { border-left-color: var(--status-caminho); }
+.monitoring-card.status-finished { border-left-color: var(--status-finalizada); }
+.tech-status { font-weight: bold; }
+
+/* --- Responsividade --- */
+@media (min-width: 1200px) {
+    .panel-group { flex-direction: row; }
+}
+
 @media (max-width: 800px) {
     .app-container { flex-direction: column; }
     #app-sidebar { width: 100%; height: auto; flex-direction: row; }
-    #app-sidebar .logo { display: none; }
-    .sidebar-nav ul { display: flex; flex: 1; justify-content: space-around; }
-    .sidebar-nav li a span { display: none; } /* Esconde texto, mostra só ícone */
+    #app-sidebar .logo, .sidebar-footer { display: none; }
+    .sidebar-nav ul { width: 100%; display: flex; justify-content: space-around; }
+    .sidebar-nav li a span { display: none; }
+    .sidebar-nav li a { font-size: 1.5em; /* Aumenta o ícone */ }
     .app-content { padding: 15px; }
-}
-
-/* --- ESTILOS PARA TELAS MAIORES (TABLET E DESKTOP) --- */
-@media (min-width: 801px) {
-    .panel-group { flex-direction: row; }
 }
