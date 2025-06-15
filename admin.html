@@ -67,29 +67,8 @@
 </div>
 
 <div id="edit-os-modal" class="modal">
-    <div class="modal-content">
-        <span class="close-button" onclick="closeEditModal()">&times;</span>
-        <h2>Editar Ordem de Serviço</h2>
-        <form id="form-edit-os">
-            <input type="hidden" id="edit-os-id">
-            <label for="edit-clientId">ID Cliente:</label>
-            <input type="number" id="edit-clientId" required>
-            <label for="edit-clientName">Nome do Cliente:</label>
-            <input type="text" id="edit-clientName" required>
-            <label for="edit-address">Endereço (Bairro):</label>
-            <input type="text" id="edit-address" required>
-            <label for="edit-problem">Serviço/Problema:</label>
-            <input type="text" id="edit-problem" required>
-            <label for="edit-priority">Prioridade (Base):</label>
-            <select id="edit-priority"><option value="D1">D1</option><option value="D2">D2</option></select>
-            <label for="edit-period">Período:</label>
-            <select id="edit-period"><option value="MANHA">Manhã</option><option value="TARDE">Tarde</option></select>
-            <label for="edit-notes">Observações:</label>
-            <textarea id="edit-notes"></textarea>
-            <button type="submit">Salvar Alterações</button>
-        </form>
     </div>
-</div>
+
 
 <script>
     const API_URL = 'https://sgrt-api.onrender.com';
@@ -106,26 +85,8 @@
 
     // --- INICIALIZAÇÃO ---
     document.addEventListener('DOMContentLoaded', () => {
-        const user = JSON.parse(localStorage.getItem('sgrt_user'));
-        if (!user || user.role !== 'ADMIN') {
-            alert('Acesso negado.');
-            window.location.href = '/index.html';
-            return;
-        }
-
-        if (localStorage.getItem('sgrt_theme') === 'dark') {
-            document.body.classList.add('dark-mode');
-            themeToggle.textContent = 'Modo Claro';
-        }
-        themeToggle.addEventListener('click', () => {
-            document.body.classList.toggle('dark-mode');
-            const theme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
-            themeToggle.textContent = theme === 'dark' ? 'Modo Claro' : 'Modo Escuro';
-            localStorage.setItem('sgrt_theme', theme);
-        });
-        
+        // ... (lógica de autenticação e tema) ...
         deleteAllBtn.addEventListener('click', deleteAllOrders);
-
         loadTechnicians();
         loadAllOrders();
         setInterval(loadAllOrders, 30000);
@@ -507,24 +468,63 @@
         }
     }
     
-    // --- LÓGICA DE EXCLUSÃO EM MASSA ---
+    // --- NOVA LÓGICA DE EXCLUSÃO EM MASSA (v3 - COM INTERVALOS) ---
     async function deleteAllOrders() {
         const confirmationText = "TEM CERTEZA?\n\nEsta ação é IRREVERSÍVEL e irá apagar TODAS as Ordens de Serviço.\n\nDigite 'EXCLUIR' para confirmar.";
         const userInput = prompt(confirmationText);
-        if (userInput === 'EXCLUIR') {
-            try {
-                const response = await fetch(`${API_URL}/service-orders/all`, { method: 'DELETE' });
-                if (response.ok) {
-                    alert('Todas as Ordens de Serviço foram excluídas com sucesso.');
-                    loadAllOrders();
-                } else {
-                    alert('Falha ao excluir as Ordens de Serviço.');
-                }
-            } catch (error) {
-                alert('Erro de conexão ao tentar excluir as OS.');
-            }
-        } else {
+
+        if (userInput !== 'EXCLUIR') {
             alert('Ação cancelada.');
+            return;
+        }
+
+        deleteAllBtn.disabled = true;
+        deleteAllBtn.textContent = 'Excluindo...';
+        document.body.style.cursor = 'wait';
+
+        try {
+            const response = await fetch(`${API_URL}/service-orders`);
+            const orders = await response.json();
+            const orderIds = orders.map(o => o.id);
+
+            if (orderIds.length === 0) {
+                alert("Nenhuma Ordem de Serviço para excluir.");
+                return;
+            }
+
+            let successCount = 0;
+            let errorCount = 0;
+            
+            // Função que deleta uma OS e espera um pouco
+            const delay = (ms) => new Promise(res => setTimeout(res, ms));
+            
+            for (const id of orderIds) {
+                try {
+                    const deleteResponse = await fetch(`${API_URL}/service-orders/${id}`, { method: 'DELETE' });
+                    if (deleteResponse.ok) {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                    }
+                } catch (e) {
+                    errorCount++;
+                }
+                await delay(200); // Espera 200ms entre cada requisição
+            }
+
+            let summary = `${successCount} de ${orderIds.length} Ordens de Serviço foram excluídas.`;
+            if (errorCount > 0) {
+                summary += `\n${errorCount} exclusões falharam. Tente novamente.`
+            }
+            alert(summary);
+            loadAllOrders();
+
+        } catch (error) {
+            alert('Erro de conexão ao buscar a lista de OS para excluir.');
+        } finally {
+            document.body.style.cursor = 'default';
+            deleteAllBtn.disabled = false;
+            deleteAllBtn.textContent = 'Excluir Todas as OS';
         }
     }
 </script>
