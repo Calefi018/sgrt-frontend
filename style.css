@@ -1,42 +1,42 @@
-/* sgrt-frontend/style.css (Versão Final com Relatórios) */
+/* sgrt-frontend/style.css (Versão Final com todos os layouts e correções) */
 
-/* --- Variáveis de Cor e Tema --- */
+/* --- Variáveis de Cor e Tema (Restauradas ao estilo original) --- */
 :root {
-    --bg-color: #f0f2f5;
+    --bg-color: #f4f7f9;
     --sidebar-bg-color: #ffffff;
     --panel-bg-color: #ffffff;
-    --text-color: #0d263b;
+    --text-color: #2c3e50;
     --text-muted-color: #6c757d;
     --border-color: #e9ecef;
-    --primary-color: #007bff;
-    --primary-hover-color: #0069d9;
-    --danger-color: #dc3545;
-    --danger-hover-color: #c82333;
+    --primary-color: #3498db;
+    --primary-hover-color: #2980b9;
+    --danger-color: #e74c3c;
+    --danger-hover-color: #c0392b;
     --secondary-color: #6c757d;
     --secondary-hover-color: #5a6268;
     --shadow-color: rgba(0, 0, 0, 0.08);
     --font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', Arial, sans-serif;
     
-    --status-executing-color: #ffc107;
-    --status-enroute-color: #17a2b8;
-    --status-finished-color: #28a745;
+    --status-executing-color: #f39c12;
+    --status-enroute-color: #3498db;
+    --status-finished-color: #2ecc71;
 }
 
 body.dark-mode {
-    --bg-color: #1c1c1e;
+    --bg-color: #1a1d21;
     --sidebar-bg-color: #2c2c2e;
     --panel-bg-color: #2c2c2e;
     --text-color: #e5e5e7;
     --text-muted-color: #a0a0a0;
     --border-color: #3a3a3c;
-    --primary-color: #0a84ff;
-    --primary-hover-color: #0060df;
+    --primary-color: #3498db;
+    --primary-hover-color: #2980b9;
     --danger-color: #e74c3c;
     --danger-hover-color: #c0392b;
-    --shadow-color: rgba(0, 0, 0, 0.2);
+    --shadow-color: rgba(0, 0, 0, 0.25);
 }
 
-/* --- Estilos Gerais (Reset & Base) --- */
+/* --- Estilos Gerais --- */
 * { box-sizing: border-box; }
 html { height: 100%; }
 body {
@@ -45,7 +45,6 @@ body {
     color: var(--text-color);
     margin: 0;
     font-size: 16px;
-    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
 }
 h1, h2, h3, h4 { color: var(--text-color); margin: 0; }
 h1 { font-size: 1.8em; }
@@ -65,26 +64,23 @@ a { color: var(--primary-color); text-decoration: none; }
 .sidebar-nav li a.active { background-color: var(--primary-color); color: white; }
 .sidebar-footer a { color: var(--text-muted-color); font-weight: 500; }
 .content-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-.nav-button { background-color: var(--panel-bg-color); color: var(--primary-color); border: 1px solid var(--border-color); padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: 500; }
+.nav-button { background-color: var(--panel-bg-color); color: var(--text-color); border: 1px solid var(--border-color); padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: 500; }
 
 /* --- Painéis, Formulários e Cards --- */
 .panel-group { display: flex; flex-direction: column; gap: 30px; }
 .panel { background-color: var(--panel-bg-color); padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px var(--shadow-color); border: 1px solid var(--border-color); margin-bottom: 30px; }
 form { display: flex; flex-direction: column; gap: 15px; }
 .form-inline { flex-direction: row; gap: 20px; align-items: flex-end; flex-wrap: wrap; }
-.form-inline div { display: flex; flex-direction: column; }
-.form-inline label { font-size: 0.9em; margin-bottom: 5px; color: var(--text-muted-color); }
 input, select, textarea { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 5px; font-size: 16px; background-color: var(--bg-color); color: var(--text-color); }
-button { background-color: var(--primary-color); color: white; padding: 12px 15px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; }
+button { background-color: var(--primary-color); color: white; padding: 14px 15px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; }
 button:hover { filter: brightness(1.1); }
-.os-card { background-color: var(--bg-color); border: 1px solid var(--border-color); border-left: 4px solid var(--text-muted-color); padding: 15px; margin-bottom: 10px; border-radius: 6px; }
 
 /* --- TABELA DE RELATÓRIOS --- */
 .report-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
 .report-table th, .report-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
 .report-table thead th { background-color: var(--bg-color); font-size: 0.9em; text-transform: uppercase; color: var(--text-muted-color); }
 .report-table tbody tr:hover { background-color: var(--bg-color); }
-.report-table td { vertical-align: top; }
+.report-table td { vertical-align: top; font-size: 0.95em; }
 .report-table ul { margin: 0; padding-left: 18px; }
 .report-table ul li { font-size: 0.9em; color: var(--text-muted-color); }
 
@@ -96,6 +92,22 @@ button:hover { filter: brightness(1.1); }
 .status-executando { background-color: #ffc107; color: #333; }
 .status-finalizada { background-color: #28a745; }
 .status-reagendada { background-color: #dc3545; }
+
+/* --- PAINEL DE MONITORAMENTO (ESTILOS CORRIGIDOS) --- */
+.monitoring-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
+.monitoring-card { background: var(--panel-bg-color); padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px var(--shadow-color); border-left: 5px solid var(--border-color); transition: border-color 0.3s; }
+.monitoring-card .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; }
+.monitoring-card .card-header h3 { font-size: 1.2em; margin: 0; }
+.tech-status { font-weight: bold; }
+.monitoring-card .card-body p { margin: 4px 0; }
+.monitoring-card .card-footer { border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9em; color: var(--text-muted-color); }
+.timer { font-weight: bold; color: var(--status-executing-color); }
+.map-link { font-weight: 500; }
+
+/* Cores de status para o monitoramento */
+.monitoring-card.status-executing { border-left-color: var(--status-executing-color); }
+.monitoring-card.status-enroute { border-left-color: var(--status-enroute-color); }
+.monitoring-card.status-finished { border-left-color: var(--status-finished-color); }
 
 /* --- RESPONSIVIDADE --- */
 @media (min-width: 1200px) { .panel-group { flex-direction: row; } }
